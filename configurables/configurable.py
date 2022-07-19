@@ -20,3 +20,9 @@ def configure(
 
     config = lookup(path, config_group)
     return target(**config)
+
+
+def configurable(
+    config_section, use_os_variables=False, use_cmd_line_variables=False
+):
+    raise NotImplementedError
