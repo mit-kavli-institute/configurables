@@ -19,6 +19,29 @@ Configurables
 A quick package to create factories using configuration files of various syntaxes.
 
 
+Examples
+-----
+Example::
+
+        import configurables as conf
+        import pathlib
+
+        from multiprocessing import cpu_count
+
+
+        @conf.configurable("PipelineSettings")
+        @conf.define_param("ra", type=float)
+        @conf.define_param("dec", type=float)
+        @conf.define_option("n_workers", type=int, default=cpu_count())
+        @conf.define_option("output_path", type=pathlib.Path, default="./")
+        def run_pipeline(ra, dec, n_workers, output_path):
+            print(
+                f"RA: {ra}, DEC: {dec}\n"
+                f"Will run with {n_workers} processes\n"
+                f"Placing output to {output_path}"
+            )
+
+
 * Free software: MIT license
 * Documentation: https://configurables.readthedocs.io.
 
