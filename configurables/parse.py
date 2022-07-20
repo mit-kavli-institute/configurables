@@ -27,6 +27,14 @@ def register(extension):
 @deal.pure
 @register(".ini")
 def parse_ini(config_path: pathlib.Path, key: str):
+    """Parse an ini file.
+    Parameters
+    ----------
+    config_path: pathlib.Path
+        The path to the desired ini configuration file
+    key: str
+        The group of the ini file to read in as keyword arguments
+    """
     config = configparser.ConfigParser()
     config.read(config_path)
     established_keys = config.sections()
