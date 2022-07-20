@@ -35,11 +35,13 @@ Example::
         @conf.define_option("n_workers", type=int, default=cpu_count())
         @conf.define_option("output_path", type=pathlib.Path, default="./")
         def run_pipeline(ra, dec, n_workers, output_path):
-            print(
+            return (
                 f"RA: {ra}, DEC: {dec}\n"
                 f"Will run with {n_workers} processes\n"
                 f"Placing output to {output_path}"
             )
+
+        print(run_pipeline("config.ini"))
 
 
 * Free software: MIT license

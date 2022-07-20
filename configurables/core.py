@@ -14,6 +14,7 @@ class Parameter:
     type: typing.Callable
 
 
+@dataclass
 class Option(Parameter):
     default: typing.Any
 
@@ -29,7 +30,7 @@ class ConfigurationBuilder:
         self.parameters[name] = parameter
 
     def add_option(self, name, type, default=None):
-        option = Option(name=name, type=type, default=None)
+        option = Option(name=name, type=type, default=default)
         self.options[name] = option
 
 
