@@ -21,7 +21,7 @@ A quick package to create factories using configuration files of various syntaxe
 
 Examples
 -----
-Example::
+Example:: python
 
         import configurables as conf
         import pathlib
