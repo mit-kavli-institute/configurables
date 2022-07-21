@@ -2,10 +2,13 @@ import os
 import pathlib
 import typing
 
+import deal
+
 from configurables.core import ConfigurationBuilder, ConfigurationFactory
 from configurables.parse import PARSING_REGISTRY, autoparse_config
 
 
+@deal.pre(lambda _: pathlib.Path(_.config_path).exists())
 def configure(
     target: typing.Callable,
     config_path: typing.Union[str, bytes, os.PathLike],
@@ -41,6 +44,7 @@ def configure(
     return target(**config)
 
 
+@deal.pre(lambda _: len(_.name) > 0)
 def define_param(name, type=str):
     """
     A decorator to add a required parameter to a ConfigurationBuilder. This
@@ -79,6 +83,7 @@ def define_param(name, type=str):
     return _internal
 
 
+@deal.pre(lambda _: len(_.name) > 0)
 def define_option(name, type, default=None):
     """
     A decorator to add an optional parameter to a ConfigurationBuilder. This
@@ -123,6 +128,7 @@ def define_option(name, type, default=None):
     return _internal
 
 
+@deal.pre(lambda _: len(_.config_section) > 0)
 def configurable(config_section):
     """
     The top-level decorator to fully bind a callable.
