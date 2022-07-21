@@ -60,7 +60,7 @@ General use is as follows with the example `ini` file.
 
 But in addition you can pass in overrides.
 
-.. code-blocks::
+.. code-block::
 
     print(run_pipeline("config.ini", n_workers=26)
 
@@ -71,7 +71,7 @@ But in addition you can pass in overrides.
 
 You can also pass in overrides via environmental variables.
 
-.. code-blocks::
+.. code-block::
 
     # $ n_workers=3 ./script.py
 
