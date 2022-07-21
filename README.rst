@@ -20,8 +20,10 @@ A quick package to create factories using configuration files of various syntaxe
 
 
 Examples
------
-.. code-block:: python
+--------
+
+General use is as follows.
+.. code-block::
     :linenos:
 
     import configurables as conf
