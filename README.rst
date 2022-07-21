@@ -24,7 +24,6 @@ Examples
 
 General use is as follows.
 .. code-block::
-    :linenos:
 
     import configurables as conf
     import pathlib
