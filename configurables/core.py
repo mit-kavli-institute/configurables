@@ -12,6 +12,7 @@ from dataclasses import dataclass
 import deal
 
 from configurables.parse import parse_ini
+from configurables.typing import CastLike, ConfigLike, PathLike
 
 
 @dataclass
@@ -33,8 +34,9 @@ class Parameter:
     If resolving using TOML, YAML, JSON, or any other "typed" configuration
     schema, resolving types will result in duplicate when casting types.
     """
+
     name: str
-    type: typing.Callable
+    type: CastLike
 
 
 @dataclass
@@ -63,6 +65,7 @@ class Option(Parameter):
     The provided default value will not be type casted!
 
     """
+
     default: typing.Any
 
 
@@ -89,15 +92,18 @@ class ConfigurationBuilder:
         Add a new option to look for when resolving configurations, using
         ``default`` when the option is not found.
     """
-    parameters: typing.Dict
-    options: typing.Dict
-    function: typing.Callable
 
-    def add_parameter(self, name, type):
+    parameters: typing.Dict[str, Parameter]
+    options: typing.Dict[str, Option]
+    function: CastLike
+
+    def add_parameter(self, name: str, type: typing.Callable):
         parameter = Parameter(name=name, type=type)
         self.parameters[name] = parameter
 
-    def add_option(self, name, type, default=None):
+    def add_option(
+        self, name: str, type: typing.Callable, default: typing.Any = None
+    ):
         option = Option(name=name, type=type, default=default)
         self.options[name] = option
 
@@ -124,15 +130,20 @@ class ConfigurationFactory:
     __call__(config_path, **overrides)
         Call the wrapped function.
     """
-    def __init__(self, config_builder, section):
+
+    def __init__(self, config_builder: ConfigurationBuilder, section: str):
         self.builder = config_builder
         self.section = section
 
-    def _resolve_param(self, key, file_opts, overrides):
+    def _resolve_param(
+        self, key: str, file_opts: ConfigLike, overrides: ConfigLike
+    ):
         _type = self.builder.parameters[key].type
         return _type(overrides.get(key, os.environ.get(key, file_opts[key])))
 
-    def _resolve_option(self, key, file_opts, overrides):
+    def _resolve_option(
+        self, key: str, file_opts: ConfigLike, overrides: ConfigLike
+    ):
         _type = self.builder.options[key].type
         return _type(
             overrides.get(
@@ -143,7 +154,7 @@ class ConfigurationFactory:
             )
         )
 
-    def parse(self, filepath, **overrides):
+    def parse(self, filepath: PathLike, **overrides):
         kwargs = {}
         file_opts = parse_ini(filepath, self.section)
         for parameter in self.builder.parameters.keys():
@@ -155,7 +166,7 @@ class ConfigurationFactory:
         return kwargs
 
     @deal.pre(lambda _: pathlib.Path(_.filepath).exists())
-    def __call__(self, filepath, **overrides):
+    def __call__(self, filepath: PathLike, **overrides):
         path = pathlib.Path(filepath)
         kwargs = self.parse(path, **overrides)
         return self.builder.function(**kwargs)
