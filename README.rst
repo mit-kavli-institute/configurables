@@ -23,6 +23,7 @@ Examples
 --------
 
 General use is as follows.
+
 .. code-block::
 
     import configurables as conf
