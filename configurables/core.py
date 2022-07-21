@@ -97,12 +97,14 @@ class ConfigurationBuilder:
     options: typing.Dict[str, Option]
     function: CastLike
 
-    def add_parameter(self, name: str, type: typing.Callable):
+    @deal.pre(lambda _: len(_.name) > 0)
+    def add_parameter(self, name: str, type: CastLike):
         parameter = Parameter(name=name, type=type)
         self.parameters[name] = parameter
 
+    @deal.pre(lambda _: len(_.name) > 0)
     def add_option(
-        self, name: str, type: typing.Callable, default: typing.Any = None
+        self, name: str, type: CastLike, default: typing.Any = None
     ):
         option = Option(name=name, type=type, default=default)
         self.options[name] = option
@@ -135,12 +137,14 @@ class ConfigurationFactory:
         self.builder = config_builder
         self.section = section
 
+    @deal.pure
     def _resolve_param(
         self, key: str, file_opts: ConfigLike, overrides: ConfigLike
     ):
         _type = self.builder.parameters[key].type
         return _type(overrides.get(key, os.environ.get(key, file_opts[key])))
 
+    @deal.pure
     def _resolve_option(
         self, key: str, file_opts: ConfigLike, overrides: ConfigLike
     ):
@@ -154,6 +158,7 @@ class ConfigurationFactory:
             )
         )
 
+    @deal.pre(lambda _: pathlib.Path(_.filepath).exists())
     def parse(self, filepath: PathLike, **overrides):
         kwargs = {}
         file_opts = parse_ini(filepath, self.section)
