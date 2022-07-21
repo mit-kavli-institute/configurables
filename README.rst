@@ -22,7 +22,14 @@ A quick package to create factories using configuration files of various syntaxe
 Examples
 --------
 
-General use is as follows.
+General use is as follows with the example `ini` file.
+
+.. code-block::
+
+    [PipelineSettings]
+    ra=10.0
+    dec=20.0
+    n_workers=5
 
 .. code-block::
 
@@ -46,6 +53,38 @@ General use is as follows.
 
     print(run_pipeline("config.ini"))
 
+    # RA: 10.0, DEC: 20.0
+    # Will run with 5 processes
+    # Placing output to PosixPath(".")
+
+
+But in addition you can pass in overrides.
+
+.. code-blocks::
+
+    print(run_pipeline("config.ini", n_workers=26)
+
+    # RA: 10.0, DEC: 20.0
+    # Will run with 26 processes
+    # Placing output to PosixPath(".")
+
+
+You can also pass in overrides via environmental variables.
+
+.. code-blocks::
+
+    # $ n_workers=3 ./script.py
+
+    print(run_pipeline("config.ini")
+
+    # RA: 10.0, DEC: 20.0
+    # Will run with 3 processes
+    # Placing output to PosixPath(".")
+
+Currently variables are resolved first by config file, then env variables,
+and finally by passed in overrides. But in the future this will be
+configurable.
+
 
 * Free software: MIT license
 * Documentation: https://configurables.readthedocs.io.
@@ -54,7 +93,11 @@ General use is as follows.
 Features
 --------
 
-* TODO
+* Pass in configuration variables with proper typing.
+* Enforce *needed* variables or provide options for unspecified variables.
+* Override those variables with different scopes such as environment variables
+  or passed in overrides
+* Pure, `configurables` will not edit your config files nor parsed variables.
 
 Credits
 -------
