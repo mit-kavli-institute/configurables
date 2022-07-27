@@ -4,7 +4,7 @@ from hypothesis import strategies as st
 
 RAW_TYPES = (str, int, float)
 
-CONFIG_PARSE_CHAR_BLACKLIST = list(" %[]:;=\xa0#")
+CONFIG_PARSE_CHAR_BLACKLIST = list("\u2000 %[]:;=\xa0#")
 
 CONFIG_PARSE_ALPHABET = st.characters(
     blacklist_characters=CONFIG_PARSE_CHAR_BLACKLIST,
