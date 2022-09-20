@@ -24,7 +24,7 @@ def test_building_configurable(header, configuration):
     with TemporaryDirectory() as folder:
         filepath = pathlib.Path(folder) / pathlib.Path("config.ini")
         note(filepath)
-        with open(filepath, "w") as fout:
+        with open(filepath, "w+") as fout:
             c_st.write_ini_configuration(fout, header, configuration)
 
         f = _reflector

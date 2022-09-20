@@ -1,15 +1,23 @@
 import configparser
+import operator
+import os
 import pathlib
+import sys
+import typing
 
 import deal
 
-PARSING_REGISTRY = {}
+from configurables.resolution import ResolutionDefinition
+
+PARSING_REGISTRY = {}  # type: typing.Dict[str, typing.Any]
 
 
-def autoparse_config(path: pathlib.Path, group) -> dict:
+def autoparse_config(path: pathlib.Path, group=None) -> dict:
     global PARSING_REGISTRY
     func = PARSING_REGISTRY[path.suffix]
-    return func(path)
+    if group is None:
+        return func(path)
+    return func(path, group)
 
 
 def register(extension):
@@ -45,3 +53,80 @@ def parse_ini(config_path: pathlib.Path, key: str):
             f"only found [{', '.join(established_keys)}]"
         )
     return config[key]
+
+
+RHS = typing.Union[ResolutionDefinition, "Interpreter"]
+
+
+class Interpreter:
+    name: typing.Union[str, None] = None
+
+    def load(self, **context):
+        return self.interpret(context)
+
+    def interpret(self, context):
+        raise NotImplementedError
+
+    def _coalese(self, rhs, op):
+        if isinstance(rhs, ResolutionDefinition):
+            lhs = self
+        else:
+            lhs = ResolutionDefinition(self)
+        return op(lhs, rhs)
+
+    def __lt__(self, rhs: RHS):
+        return self._coalese(rhs, operator.lt)
+
+    def __gt__(self, rhs: RHS):
+        return self._coalese(rhs, operator.gt)
+
+
+class Env(Interpreter):
+    name = "ENV"
+
+    def interpret(self, context):
+        return os.environ
+
+
+class Cli(Interpreter):
+    name = "CLI"
+
+    def interpret(self, context):
+        args = sys.argv
+        nargs = len(args)
+        cursor = 1
+        accumulator = {}
+        while cursor < nargs:
+            arg = args[cursor]
+            if arg.startswith("--"):
+                param_name = arg[2:]
+                accumulator[param_name] = None
+
+                cursor += 1
+                while cursor < nargs and not args[cursor].startswith("--"):
+                    arg = args[cursor]
+                    current_val = accumulator[param_name]
+                    if current_val is None:
+                        accumulator[param_name] = arg
+                    elif isinstance(current_val, str):
+                        accumulator[param_name] = [current_val, arg]
+                    else:
+                        accumulator[param_name].append(arg)
+                    cursor += 1
+        return accumulator
+
+
+class Cfg(Interpreter):
+    name = "CFG"
+
+    def interpret(self, context):
+        config_path = context["config_path"]
+        result = autoparse_config(
+            config_path, **context.get("parse_kwargs", {})
+        )
+        return result
+
+
+ENV = Env()
+CLI = Cli()
+CFG = Cfg()

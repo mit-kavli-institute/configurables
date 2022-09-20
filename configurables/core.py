@@ -1,11 +1,7 @@
-import os
-import pathlib
 import typing
 from dataclasses import dataclass
 
-import deal
-
-from configurables.parse import parse_ini
+from configurables.resolution import ResolutionDefinition
 
 
 @dataclass
@@ -34,38 +30,56 @@ class ConfigurationBuilder:
 
 
 class ConfigurationFactory:
-    def __init__(self, config_builder, section):
+    def __init__(
+        self,
+        config_builder,
+        section,
+        configuration_order: ResolutionDefinition,
+    ):
         self.builder = config_builder
         self.section = section
+        self.configuration_order = configuration_order
 
-    def _resolve_param(self, key, file_opts, overrides):
+    def __repr__(self):
+        return f"{self.section}: {self.configuration_order}"
+
+    def _resolve_param(self, key, raw_values, overrides):
         _type = self.builder.parameters[key].type
-        return _type(overrides.get(key, os.environ.get(key, file_opts[key])))
+        try:
+            value = overrides[key]
+        except KeyError:
+            value = raw_values[key]
+        return _type(value)
 
-    def _resolve_option(self, key, file_opts, overrides):
+    def _resolve_option(self, key, raw_values, overrides):
         _type = self.builder.options[key].type
-        return _type(
-            overrides.get(
-                key,
-                os.environ.get(
-                    key, file_opts.get(key, self.builder.options[key].default)
-                ),
-            )
-        )
+        try:
+            raw_value = overrides[key]
+        except KeyError:
+            try:
+                raw_value = raw_values[key]
+            except KeyError:
+                return self.builder.options[key].default
 
-    def parse(self, filepath, **overrides):
+        return _type(raw_value)
+
+    def parse(self, _filepath=None, **overrides):
+        context = {}
+        if _filepath is not None:
+            context["config_path"] = _filepath
+        context["parse_kwargs"] = {"group": self.section}
         kwargs = {}
-        file_opts = parse_ini(filepath, self.section)
+        parsed_opts = self.configuration_order.load(**context)
         for parameter in self.builder.parameters.keys():
             kwargs[parameter] = self._resolve_param(
-                parameter, file_opts, overrides
+                parameter, parsed_opts, overrides
             )
         for option in self.builder.options.keys():
-            kwargs[option] = self._resolve_option(option, file_opts, overrides)
+            kwargs[option] = self._resolve_option(
+                option, parsed_opts, overrides
+            )
         return kwargs
 
-    @deal.pre(lambda _: pathlib.Path(_.filepath).exists())
-    def __call__(self, filepath, **overrides):
-        path = pathlib.Path(filepath)
-        kwargs = self.parse(path, **overrides)
+    def __call__(self, _filepath=None, **overrides):
+        kwargs = self.parse(_filepath=_filepath, **overrides)
         return self.builder.function(**kwargs)

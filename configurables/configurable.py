@@ -3,12 +3,12 @@ import pathlib
 import typing
 
 from configurables.core import ConfigurationBuilder, ConfigurationFactory
-from configurables.parse import PARSING_REGISTRY, autoparse_config
+from configurables.parse import CFG, PARSING_REGISTRY, autoparse_config
 
 
 def configure(
     target: typing.Callable,
-    config_path: typing.Union[str, bytes, os.PathLike],
+    config_path: typing.Union[str, os.PathLike[str]],
     config_group: typing.Union[None, str] = None,
     extension_override: typing.Union[None, str] = None,
 ):
@@ -123,7 +123,7 @@ def define_option(name, type, default=None):
     return _internal
 
 
-def configurable(config_section):
+def configurable(config_section, order=None):
     """
     The top-level decorator to fully bind a callable.
 
@@ -140,7 +140,9 @@ def configurable(config_section):
                 "defined any parameters or options! "
                 f"Instead got {config_builder}"
             )
-        factory = ConfigurationFactory(config_builder, config_section)
+        factory = ConfigurationFactory(
+            config_builder, config_section, CFG if order is None else order
+        )
         return factory
 
     return _internal
