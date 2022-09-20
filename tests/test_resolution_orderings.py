@@ -44,19 +44,20 @@ def test_orderings(monkeypatch, ordering, header, data):
                 types[key] = type(value)
         order = reduce(lambda lhs, rhs: lhs > rhs, ordering)
 
-        f = _reflector
+        func = _reflector
         for key in defined_keys:
             type_ = types[key]
-            f = define_param(key, type=type_)(f)
-        f = configurable(header, order=order)(f)
+            func = define_param(key, type=type_)(func)
+        func = configurable(header, order=order)(func)
 
         if any(order.name == "CFG" for order in ordering):
-            result = f(filepath)
+            result = func(filepath)
         else:
-            result = f()
+            result = func()
 
         order_debug = [order.name for order in ordering]
         note(f"Order: {' > '.join(order_debug)}")
+        note(func)
         for key, value in result.items():
             ref = reference[key]
             if isinstance(value, float) and isnan(value):
