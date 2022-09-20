@@ -80,6 +80,12 @@ class Interpreter:
     def __gt__(self, rhs: RHS):
         return self._coalese(rhs, operator.gt)
 
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return self.name
+
 
 class Env(Interpreter):
     name = "ENV"

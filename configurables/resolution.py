@@ -55,6 +55,9 @@ class ResolutionDefinition:
         self.interpreter_order.insert(0, rhs)
         return self
 
+    def __repr__(self):
+        return " > ".join(map(str, self.interpreter_order))
+
     def load(self, **context):
         payload = {}
 
