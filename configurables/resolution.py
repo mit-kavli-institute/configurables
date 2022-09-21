@@ -1,3 +1,6 @@
+import deal
+
+
 class InvalidOrdering(Exception):
     """
     Raised when the given set of ordering pairs results in something
@@ -41,18 +44,20 @@ class ResolutionDefinition:
     def __init__(self, first_element):
         self.interpreter_order = [first_element]
 
+    @deal.ensure(lambda _: _.rhs in _.self.interpreter_order)
     def __lt__(self, rhs):
         if rhs in self.interpreter_order:
             raise InvalidOrdering()
 
-        self.interpreter_order.append(rhs)
+        self.interpreter_order.insert(0, rhs)
         return self
 
+    @deal.ensure(lambda _: _.rhs in _.self.interpreter_order)
     def __gt__(self, rhs):
         if rhs in self.interpreter_order:
             raise InvalidOrdering()
 
-        self.interpreter_order.insert(0, rhs)
+        self.interpreter_order.append(rhs)
         return self
 
     def __repr__(self):

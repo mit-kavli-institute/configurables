@@ -15,7 +15,10 @@ def _reflector(**kwargs):
     return kwargs
 
 
-@settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
+@settings(
+    suppress_health_check=[HealthCheck.function_scoped_fixture],
+    max_examples=500,
+)
 @given(c_st.resolutions(), c_st.config_strings(), st.data())
 def test_orderings(monkeypatch, ordering, header, data):
     configurations = data.draw(
@@ -42,6 +45,7 @@ def test_orderings(monkeypatch, ordering, header, data):
             defined_keys.update(conf.keys())
             for key, value in conf.items():
                 types[key] = type(value)
+
         order = reduce(lambda lhs, rhs: lhs > rhs, ordering)
 
         func = _reflector

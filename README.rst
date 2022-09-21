@@ -16,7 +16,8 @@ Configurables
 
 
 
-A quick package to create factories using configuration files of various syntaxes.
+A quick package to create factories using configuration files of various
+syntaxes.
 
 
 * Free software: MIT license
@@ -26,10 +27,14 @@ A quick package to create factories using configuration files of various syntaxe
 Features
 --------
 
-* TODO
+Typed parameters and options loaded from arbitrary configuration files,
+command line parameters, and environmental variables.
 
 Credits
 -------
+
+This package was created by William Fong in effort to provide boilerplate
+capabilities for overriding configured variables for scientific pipelines.
 
 This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
 
