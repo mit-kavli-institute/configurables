@@ -1,5 +1,5 @@
 Welcome to Configurables's documentation!
-======================================
+=========================================
 
 .. toctree::
    :maxdepth: 2
