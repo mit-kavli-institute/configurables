@@ -8,7 +8,7 @@ from configurables.parse import CFG, PARSING_REGISTRY, autoparse_config
 
 def configure(
     target: typing.Callable,
-    config_path: typing.Union[str, os.PathLike[str]],
+    config_path: typing.Union[str, os.PathLike],
     config_group: typing.Union[None, str] = None,
     extension_override: typing.Union[None, str] = None,
 ):
@@ -41,7 +41,7 @@ def configure(
     return target(**config)
 
 
-def define_param(name, type=str):
+def param(name, type=str):
     """
     A decorator to add a required parameter to a ConfigurationBuilder. This
     functionality allows type casting to occur.
@@ -56,8 +56,8 @@ def define_param(name, type=str):
     Examples
     --------
     >>> @configurable("Credentials")
-    >>> @define_param("username", type=str)
-    >>> @define_param("password", type=str)
+    >>> @param("username", type=str)
+    >>> @param("password", type=str)
     >>> def login(username, password):
     >>>     print(username, "*" * len(password))
     >>>
@@ -79,7 +79,7 @@ def define_param(name, type=str):
     return _internal
 
 
-def define_option(name, type, default=None):
+def option(name, type, default=None):
     """
     A decorator to add an optional parameter to a ConfigurationBuilder. This
     functionality allows type casting to occur as well as providing a default
@@ -100,8 +100,8 @@ def define_option(name, type, default=None):
     Examples
     --------
     >>> @configurable("Credentials")
-    >>> @define_option("username", type=str, default=os.getlogin())
-    >>> @define_param("password", type=str)
+    >>> @option("username", type=str, default=os.getlogin())
+    >>> @param("password", type=str)
     >>> def login(username, password):
     >>>     print(username, "*" * len(password))
     >>>

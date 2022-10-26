@@ -4,7 +4,7 @@ from tempfile import TemporaryDirectory
 
 from hypothesis import given, note
 
-from configurables import configurable, define_param
+from configurables import configurable, param
 from configurables.core import ConfigurationBuilder
 
 from . import strategies as c_st
@@ -15,7 +15,7 @@ def _reflector(**kwargs):
 
 
 def test_add_parameter_construction():
-    f = define_param("test_key", type=str)(_reflector)
+    f = param("test_key", type=str)(_reflector)
     assert isinstance(f, ConfigurationBuilder)
 
 
@@ -29,7 +29,7 @@ def test_building_configurable(header, configuration):
 
         f = _reflector
         for key, value in configuration.items():
-            f = define_param(key, type=type(value))(f)
+            f = param(key, type=type(value))(f)
         f = configurable(header)(f)
         result = f(filepath)
         for key, value in result.items():

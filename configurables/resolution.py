@@ -28,7 +28,7 @@ class ResolutionDefinition:
     >>> import configurables as conf
     >>>
     >>> @conf.configurables("Test", ordering=conf.ENV > conf.CFG)
-    >>> @conf.define_param("key", type=str)
+    >>> @conf.param("key", type=str)
     >>> def load(key):
     >>>     print(key)
 

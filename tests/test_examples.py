@@ -1,12 +1,12 @@
 import pathlib
 from tempfile import TemporaryDirectory
 
-from configurables import configurable, define_param
+from configurables import configurable, param
 
 
 @configurable("Credentials")
-@define_param("username", type=str)
-@define_param("password", type=str)
+@param("username", type=str)
+@param("password", type=str)
 def login(username, password):
     return username, password
 

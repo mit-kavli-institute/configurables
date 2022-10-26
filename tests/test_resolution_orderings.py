@@ -6,7 +6,7 @@ from tempfile import TemporaryDirectory
 from hypothesis import HealthCheck, given, note, settings
 from hypothesis import strategies as st
 
-from configurables import configurable, define_param
+from configurables import configurable, param
 
 from . import strategies as c_st
 
@@ -51,7 +51,7 @@ def test_orderings(monkeypatch, ordering, header, data):
         func = _reflector
         for key in defined_keys:
             type_ = types[key]
-            func = define_param(key, type=type_)(func)
+            func = param(key, type=type_)(func)
         func = configurable(header, order=order)(func)
 
         if any(order.name == "CFG" for order in ordering):
