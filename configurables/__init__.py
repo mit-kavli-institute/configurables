@@ -4,7 +4,7 @@ from configurables.parse import CFG, CLI, ENV
 
 __author__ = """William Christopher Fong"""
 __email__ = "willfong@mit.edu"
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 
 __all__ = [
