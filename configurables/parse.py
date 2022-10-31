@@ -20,10 +20,11 @@ def autoparse_config(path: pathlib.Path, group=None) -> dict:
     return func(path, group)
 
 
-def register(extension):
+def register(*extensions):
     def decoration(func):
         global PARSING_REGISTRY
-        PARSING_REGISTRY[extension] = func
+        for extension in extensions:
+            PARSING_REGISTRY[extension] = func
         return func
 
     return decoration
@@ -33,7 +34,7 @@ def register(extension):
 @deal.pre(lambda _: _.config_path.exists())
 @deal.pre(lambda _: isinstance(_.config_path, pathlib.Path))
 @deal.pure
-@register(".ini")
+@register(".ini", ".conf")
 def parse_ini(config_path: pathlib.Path, key: str):
     """Parse an ini file.
     Parameters
