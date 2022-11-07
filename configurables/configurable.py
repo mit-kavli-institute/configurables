@@ -79,7 +79,7 @@ def param(name, type=str):
     return _internal
 
 
-def option(name, type, default=None):
+def option(name, type=str, default=None):
     """
     A decorator to add an optional parameter to a ConfigurationBuilder. This
     functionality allows type casting to occur as well as providing a default
