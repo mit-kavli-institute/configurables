@@ -13,6 +13,7 @@ PARSING_REGISTRY = {}  # type: typing.Dict[str, typing.Any]
 
 
 def autoparse_config(path: pathlib.Path, group=None) -> dict:
+    path = pathlib.Path(path)
     global PARSING_REGISTRY
     func = PARSING_REGISTRY[path.suffix]
     if group is None:
