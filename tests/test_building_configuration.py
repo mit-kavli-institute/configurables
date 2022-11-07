@@ -29,7 +29,10 @@ def test_building_configurable(header, configuration):
 
         f = _reflector
         for key, value in configuration.items():
-            f = param(key, type=type(value))(f)
+            if type(value) == str:
+                f = param(key)(f)
+            else:
+                f = param(key, type=type(value))(f)
         f = configurable(header)(f)
         result = f(filepath)
         for key, value in result.items():
