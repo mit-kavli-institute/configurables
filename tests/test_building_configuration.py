@@ -63,3 +63,27 @@ def test_building_configurable_options(header, configuration):
                 assert isnan(configuration[key])
             else:
                 assert value == configuration[key]
+
+
+@given(c_st.config_strings(), c_st.configurations())
+def test_partial(header, configuration):
+    with TemporaryDirectory() as folder:
+        filepath = pathlib.Path(folder) / pathlib.Path("config.ini")
+        note(filepath)
+        with open(filepath, "w+") as fout:
+            c_st.write_ini_configuration(fout, header, configuration)
+
+        f = _reflector
+        for key, value in configuration.items():
+            if type(value) == str:
+                f = param(key)(f)
+            else:
+                f = param(key, type=type(value))(f)
+        f = configurable(header)(f)
+        partial = f.partial(filepath)
+        result = partial()
+        for key, value in result.items():
+            if isinstance(value, float) and isnan(value):
+                assert isnan(configuration[key])
+            else:
+                assert value == configuration[key]
