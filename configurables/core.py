@@ -1,5 +1,6 @@
 import typing
 from dataclasses import dataclass
+from functools import partial
 
 from configurables.emission import autoemit_config
 from configurables.resolution import ResolutionDefinition
@@ -91,3 +92,10 @@ class ConfigurationFactory:
     def emit(self, output_path, _filepath=None, **overrides):
         kwargs = self.parse(_filepath=_filepath, **overrides)
         return autoemit_config(output_path, kwargs, group=self.section)
+
+    def partial(self, _filepath=None, **overrides):
+        """
+        Generate a partial function using the passed configurations.
+        """
+        kwargs = self.parse(_filepath=_filepath, **overrides)
+        return partial(self.builder.function, **kwargs)
