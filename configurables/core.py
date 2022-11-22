@@ -59,7 +59,7 @@ class ConfigurationFactory:
     def _resolve_option(self, key, raw_values, overrides):
         _type = self.builder.options[key].type
         try:
-            raw_value = overrides[key]
+            return overrides[key]
         except KeyError:
             try:
                 raw_value = raw_values[key]
@@ -68,7 +68,7 @@ class ConfigurationFactory:
 
         return _type(raw_value)
 
-    def parse(self, _filepath=None, **overrides):
+    def parse(self, _filepath=None, _ignore_options=False, **overrides):
         context = {}
         if _filepath is not None:
             context["config_path"] = _filepath
@@ -79,18 +79,23 @@ class ConfigurationFactory:
             kwargs[parameter] = self._resolve_param(
                 parameter, parsed_opts, overrides
             )
-        for option in self.builder.options.keys():
-            kwargs[option] = self._resolve_option(
-                option, parsed_opts, overrides
-            )
+        if not _ignore_options:
+            for option in self.builder.options.keys():
+                kwargs[option] = self._resolve_option(
+                    option, parsed_opts, overrides
+                )
         return kwargs
 
     def __call__(self, _filepath=None, **overrides):
         kwargs = self.parse(_filepath=_filepath, **overrides)
         return self.builder.function(**kwargs)
 
-    def emit(self, output_path, _filepath=None, **overrides):
-        kwargs = self.parse(_filepath=_filepath, **overrides)
+    def emit(
+        self, output_path, _filepath=None, _ignore_options=True, **overrides
+    ):
+        kwargs = self.parse(
+            _filepath=_filepath, _ignore_options=_ignore_options, **overrides
+        )
         return autoemit_config(output_path, kwargs, group=self.section)
 
     def partial(self, _filepath=None, **overrides):
