@@ -48,23 +48,17 @@ class ConfigurationFactory:
     def __repr__(self):
         return f"{self.section}: {self.configuration_order}"
 
-    def _resolve_param(self, key, raw_values, overrides):
+    def _resolve_param(self, key, raw_values):
         _type = self.builder.parameters[key].type
-        try:
-            value = overrides[key]
-        except KeyError:
-            value = raw_values[key]
+        value = raw_values[key]
         return _type(value)
 
-    def _resolve_option(self, key, raw_values, overrides):
+    def _resolve_option(self, key, raw_values):
         _type = self.builder.options[key].type
         try:
-            return overrides[key]
+            raw_value = raw_values[key]
         except KeyError:
-            try:
-                raw_value = raw_values[key]
-            except KeyError:
-                return self.builder.options[key].default
+            return self.builder.options[key].default
 
         return _type(raw_value)
 
@@ -76,14 +70,11 @@ class ConfigurationFactory:
         kwargs = {}
         parsed_opts = self.configuration_order.load(**context)
         for parameter in self.builder.parameters.keys():
-            kwargs[parameter] = self._resolve_param(
-                parameter, parsed_opts, overrides
-            )
+            kwargs[parameter] = self._resolve_param(parameter, parsed_opts)
         if not _ignore_options:
             for option in self.builder.options.keys():
-                kwargs[option] = self._resolve_option(
-                    option, parsed_opts, overrides
-                )
+                kwargs[option] = self._resolve_option(option, parsed_opts)
+        kwargs.update(overrides)
         return kwargs
 
     def __call__(self, _filepath=None, **overrides):
