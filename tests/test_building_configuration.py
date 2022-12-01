@@ -3,6 +3,7 @@ from math import isnan
 from tempfile import TemporaryDirectory
 
 from hypothesis import given, note
+from hypothesis import strategies as st
 
 from configurables import configurable, option, param
 from configurables.core import ConfigurationBuilder
@@ -87,3 +88,42 @@ def test_partial(header, configuration):
                 assert isnan(configuration[key])
             else:
                 assert value == configuration[key]
+
+
+@given(st.data(), c_st.config_strings(), c_st.configurations())
+def test_overrides(data, header, configuration):
+    override_keys = st.text(min_size=1).filter(
+        lambda s: s not in configuration
+    )
+    override_values = data.draw(
+        st.dictionaries(
+            override_keys,
+            st.one_of(st.none(), st.integers(), st.floats(), st.text()),
+        )
+    )
+    with TemporaryDirectory() as folder:
+        filepath = pathlib.Path(folder) / pathlib.Path("config.ini")
+        with open(filepath, "w+") as fout:
+            c_st.write_ini_configuration(fout, header, configuration)
+
+        f = _reflector
+        for key, value in configuration.items():
+            if type(value) == str:
+                f = param(key)(f)
+            else:
+                f = param(key, type=type(value))(f)
+        f = configurable(header)(f)
+        result = f(filepath, **override_values)
+        note(str(result))
+        note(str(configuration))
+        note(str(override_values))
+        for key, value in result.items():
+            note(key)
+            try:
+                ref = override_values[key]
+            except KeyError:
+                ref = configuration[key]
+            if isinstance(value, float) and isnan(value):
+                assert isnan(ref)
+            else:
+                assert value == ref
