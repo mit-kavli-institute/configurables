@@ -5,8 +5,6 @@ import pathlib
 import sys
 import typing
 
-import deal
-
 from configurables.resolution import ResolutionDefinition
 
 PARSING_REGISTRY = {}  # type: typing.Dict[str, typing.Any]
@@ -31,10 +29,6 @@ def register(*extensions):
     return decoration
 
 
-@deal.raises(KeyError)
-@deal.pre(lambda _: _.config_path.exists())
-@deal.pre(lambda _: isinstance(_.config_path, pathlib.Path))
-@deal.pure
 @register(".ini", ".conf")
 def parse_ini(config_path: pathlib.Path, key: str):
     """Parse an ini file.
