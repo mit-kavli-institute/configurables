@@ -62,6 +62,10 @@ class ConfigurationFactory:
 
         return _type(raw_value)
 
+    def __call__(self, _filepath=None, **overrides):
+        kwargs = self.parse(_filepath=_filepath, **overrides)
+        return self.builder.function(**kwargs)
+
     def parse(self, _filepath=None, _ignore_options=False, **overrides):
         context = {}
         if _filepath is not None:
@@ -80,10 +84,6 @@ class ConfigurationFactory:
                 kwargs[option] = self._resolve_option(option, parsed_opts)
         kwargs.update(overrides)
         return kwargs
-
-    def __call__(self, _filepath=None, **overrides):
-        kwargs = self.parse(_filepath=_filepath, **overrides)
-        return self.builder.function(**kwargs)
 
     def emit(
         self, output_path, _filepath=None, _ignore_options=True, **overrides
