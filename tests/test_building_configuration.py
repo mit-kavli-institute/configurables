@@ -127,3 +127,34 @@ def test_overrides(data, header, configuration):
                 assert isnan(ref)
             else:
                 assert value == ref
+
+
+@given(st.data(), c_st.config_strings(), c_st.configurations())
+def test_pass_through(data, header, configuration):
+    f = _reflector
+    complete_override = {}
+    for key in configuration.keys():
+        complete_override[key] = data.draw(
+            st.one_of(
+                st.none(),
+                st.integers(),
+                st.floats(),
+                st.text()
+            )
+        )
+
+    for key, value in configuration.items():
+        if type(value) == str:
+            f = param(key)(f)
+        else:
+            f = param(key, type=type(value))(f)
+    f = configurable(header)(f)
+
+    result = f(**complete_override)
+    for key, value in result.items():
+        ref_value = complete_override[key]
+
+        if isinstance(value, float) and isnan(value):
+            assert isnan(ref_value)
+        else:
+            assert value == ref_value

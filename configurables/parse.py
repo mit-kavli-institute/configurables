@@ -128,7 +128,11 @@ class Cfg(Interpreter):
     name = "CFG"
 
     def interpret(self, context):
-        config_path = context["config_path"]
+        try:
+            config_path = context["config_path"]
+        except KeyError:
+            return {}
+
         result = autoparse_config(
             config_path, **context.get("parse_kwargs", {})
         )

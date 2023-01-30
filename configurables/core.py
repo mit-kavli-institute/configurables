@@ -70,7 +70,11 @@ class ConfigurationFactory:
         kwargs = {}
         parsed_opts = self.configuration_order.load(**context)
         for parameter in self.builder.parameters.keys():
-            kwargs[parameter] = self._resolve_param(parameter, parsed_opts)
+            try:
+                kwargs[parameter] = self._resolve_param(parameter, parsed_opts)
+            except KeyError:
+                kwargs[parameter] = overrides[parameter]
+
         if not _ignore_options:
             for option in self.builder.options.keys():
                 kwargs[option] = self._resolve_option(option, parsed_opts)
