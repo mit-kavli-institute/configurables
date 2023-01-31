@@ -10,7 +10,9 @@ from configurables.resolution import ResolutionDefinition
 PARSING_REGISTRY = {}  # type: typing.Dict[str, typing.Any]
 
 
-def autoparse_config(path: pathlib.Path, group=None) -> dict:
+def autoparse_config(
+    path: pathlib.Path, group: typing.Optional[str] = None
+) -> dict:
     path = pathlib.Path(path)
     global PARSING_REGISTRY
     func = PARSING_REGISTRY[path.suffix]
@@ -19,7 +21,7 @@ def autoparse_config(path: pathlib.Path, group=None) -> dict:
     return func(path, group)
 
 
-def register(*extensions):
+def register(*extensions: str) -> typing.Callable:
     def decoration(func):
         global PARSING_REGISTRY
         for extension in extensions:
@@ -30,7 +32,9 @@ def register(*extensions):
 
 
 @register(".ini", ".conf")
-def parse_ini(config_path: pathlib.Path, key: str):
+def parse_ini(
+    config_path: pathlib.Path, key: str
+) -> configparser.SectionProxy:
     """Parse an ini file.
     Parameters
     ----------
@@ -55,7 +59,7 @@ RHS = typing.Union[ResolutionDefinition, "Interpreter"]
 
 
 class Interpreter:
-    name: typing.Union[str, None] = None
+    name: typing.Optional[str] = None
 
     def load(self, **context):
         return self.interpret(context)
