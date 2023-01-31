@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 import os
 import pathlib
 import typing
 
 from configurables.core import ConfigurationBuilder, ConfigurationFactory
 from configurables.parse import CFG, PARSING_REGISTRY, autoparse_config
+from configurables.resolution import ResolutionDefinition
 
 
 def configure(
@@ -79,7 +82,7 @@ def param(name: str, type=str) -> typing.Callable:
     return _internal
 
 
-def option(name, type=str, default=None):
+def option(name: str, type=str, default: typing.Any = None):
     """
     A decorator to add an optional parameter to a ConfigurationBuilder. This
     functionality allows type casting to occur as well as providing a default
@@ -123,7 +126,9 @@ def option(name, type=str, default=None):
     return _internal
 
 
-def configurable(config_section, order=None):
+def configurable(
+    config_section: str, order: typing.Optional[ResolutionDefinition] = None
+):
     """
     The top-level decorator to fully bind a callable.
 
