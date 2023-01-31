@@ -5,8 +5,12 @@ import pathlib
 import typing
 
 from configurables.core import ConfigurationBuilder, ConfigurationFactory
-from configurables.parse import CFG, PARSING_REGISTRY, autoparse_config
-from configurables.resolution import ResolutionDefinition
+from configurables.parse import (
+    CFG,
+    PARSING_REGISTRY,
+    ResolutionDefinition,
+    autoparse_config,
+)
 
 
 def configure(

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from functools import partial
 
 from configurables.emission import autoemit_config
-from configurables.resolution import ResolutionDefinition
+from configurables.parse import ResolutionDefinition
 
 
 @dataclass
