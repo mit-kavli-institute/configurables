@@ -48,8 +48,8 @@ class ConfigurationBuilder:
 class ConfigurationFactory:
     def __init__(
         self,
-        config_builder,
-        section,
+        config_builder: ConfigurationBuilder,
+        section: str,
         configuration_order: ResolutionDefinition,
     ):
         self.builder = config_builder
