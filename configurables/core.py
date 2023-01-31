@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import os
+import pathlib
 import typing
 from dataclasses import dataclass
 from functools import partial
@@ -76,7 +76,7 @@ class ConfigurationFactory:
 
     def __call__(
         self,
-        _filepath: typing.Optional[os.PathLike] = None,
+        _filepath: typing.Optional[pathlib.Path] = None,
         **overrides: typing.Any,
     ) -> typing.Any:
         kwargs = self.parse(_filepath=_filepath, **overrides)
@@ -84,11 +84,11 @@ class ConfigurationFactory:
 
     def parse(
         self,
-        _filepath: typing.Optional[os.PathLike] = None,
-        _ignore_options: typing.Boolean = False,
+        _filepath: typing.Optional[pathlib.Path] = None,
+        _ignore_options: bool = False,
         **overrides: typing.Any,
     ) -> typing.Any:
-        context = {}
+        context = {}  # type: typing.Dict[str, typing.Any]
         if _filepath is not None:
             context["config_path"] = _filepath
         context["parse_kwargs"] = {"group": self.section}
@@ -108,9 +108,9 @@ class ConfigurationFactory:
 
     def emit(
         self,
-        output_path: os.PathLike,
-        _filepath: typing.Optional[os.PathLike] = None,
-        _ignore_options: typing.Boolean = True,
+        output_path: pathlib.Path,
+        _filepath: typing.Optional[pathlib.Path] = None,
+        _ignore_options: bool = True,
         **overrides: typing.Any,
     ) -> dict:
         kwargs = self.parse(
@@ -120,7 +120,7 @@ class ConfigurationFactory:
 
     def partial(
         self,
-        _filepath: typing.Optional[os.PathLike] = None,
+        _filepath: typing.Optional[pathlib.Path] = None,
         **overrides: typing.Any,
     ) -> typing.Callable:
         """
