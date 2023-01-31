@@ -27,13 +27,22 @@ class ConfigurationBuilder:
     options: dict
     function: typing.Callable
 
-    def add_parameter(self, name, type):
+    def add_parameter(self, name: str, type: typing.Callable) -> Parameter:
         parameter = Parameter(name=name, type=type)
         self.parameters[name] = parameter
 
-    def add_option(self, name, type, default=None):
+        return parameter
+
+    def add_option(
+        self,
+        name: str,
+        type: typing.Callable,
+        default: typing.Optional[typing.Any] = None,
+    ) -> Option:
         option = Option(name=name, type=type, default=default)
         self.options[name] = option
+
+        return option
 
 
 class ConfigurationFactory:
