@@ -56,20 +56,22 @@ def parse_ini(
 
 
 RHS = typing.Union[ResolutionDefinition, "Interpreter"]
+LHS = RHS
+OP = typing.Callable[[LHS, RHS], ResolutionDefinition]
 
 
 class Interpreter:
     name: typing.Optional[str] = None
 
-    def load(self, **context):
+    def load(self, **context: typing.Any) -> dict:
         return self.interpret(context)
 
-    def interpret(self, context):
+    def interpret(self, context: dict) -> dict:
         raise NotImplementedError
 
-    def _coalese(self, rhs, op):
+    def _coalese(self, rhs: RHS, op: OP) -> ResolutionDefinition:
         if isinstance(rhs, ResolutionDefinition):
-            lhs = self
+            lhs = self  # type: LHS
         else:
             lhs = ResolutionDefinition(self)
         return op(lhs, rhs)
@@ -90,18 +92,18 @@ class Interpreter:
 class Env(Interpreter):
     name = "ENV"
 
-    def interpret(self, context):
-        return os.environ
+    def interpret(self, context: dict) -> dict:
+        return dict(os.environ)
 
 
 class Cli(Interpreter):
     name = "CLI"
 
-    def interpret(self, context):
+    def interpret(self, context: dict) -> dict:
         args = sys.argv
         nargs = len(args)
         cursor = 1
-        accumulator = {}
+        accumulator = {}  # type: dict[str, typing.Union[str, list[str], None]]
         while cursor < nargs:
             arg = args[cursor]
             if arg.startswith("--"):
@@ -112,12 +114,12 @@ class Cli(Interpreter):
                 while cursor < nargs and not args[cursor].startswith("--"):
                     arg = args[cursor]
                     current_val = accumulator[param_name]
-                    if current_val is None:
-                        accumulator[param_name] = arg
-                    elif isinstance(current_val, str):
+                    if isinstance(current_val, str):
                         accumulator[param_name] = [current_val, arg]
-                    else:
-                        accumulator[param_name].append(arg)
+                    elif isinstance(current_val, list):
+                        current_val.append(arg)
+                    elif current_val is None:
+                        accumulator[param_name] = arg
                     cursor += 1
         return accumulator
 
@@ -125,7 +127,7 @@ class Cli(Interpreter):
 class Cfg(Interpreter):
     name = "CFG"
 
-    def interpret(self, context):
+    def interpret(self, context: dict) -> dict:
         try:
             config_path = context["config_path"]
         except KeyError:
