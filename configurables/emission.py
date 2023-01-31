@@ -8,14 +8,14 @@ EMISSION_REGISTRY = {}  # type: typing.Dict[str, typing.Any]
 def autoemit_config(
     path: pathlib.Path,
     configuration: typing.Dict[typing.Any, typing.Any],
-    group=None,
+    group: typing.Optional[str] = None,
 ) -> dict:
     global EMISSION_REGISTRY
     func = EMISSION_REGISTRY[path.suffix]
     return func(path, group, configuration)
 
 
-def register(*extensions):
+def register(*extensions: str) -> typing.Callable:
     def decoration(func):
         global EMISSION_REGISTRY
         for extension in extensions:
@@ -30,7 +30,7 @@ def emit_init(
     config_path: pathlib.Path,
     header: str,
     configuration: typing.Dict[typing.Any, typing.Any],
-):
+) -> pathlib.Path:
     parser = configparser.ConfigParser()
     parser[header] = configuration
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import typing
 from dataclasses import dataclass
 from functools import partial
@@ -59,12 +60,12 @@ class ConfigurationFactory:
     def __repr__(self):
         return f"{self.section}: {self.configuration_order}"
 
-    def _resolve_param(self, key, raw_values):
+    def _resolve_param(self, key: str, raw_values: dict) -> typing.Any:
         _type = self.builder.parameters[key].type
         value = raw_values[key]
         return _type(value)
 
-    def _resolve_option(self, key, raw_values):
+    def _resolve_option(self, key: str, raw_values: dict) -> typing.Any:
         _type = self.builder.options[key].type
         try:
             raw_value = raw_values[key]
@@ -73,11 +74,20 @@ class ConfigurationFactory:
 
         return _type(raw_value)
 
-    def __call__(self, _filepath=None, **overrides):
+    def __call__(
+        self,
+        _filepath: typing.Optional[os.PathLike] = None,
+        **overrides: typing.Any,
+    ) -> typing.Any:
         kwargs = self.parse(_filepath=_filepath, **overrides)
         return self.builder.function(**kwargs)
 
-    def parse(self, _filepath=None, _ignore_options=False, **overrides):
+    def parse(
+        self,
+        _filepath: typing.Optional[os.PathLike] = None,
+        _ignore_options: typing.Boolean = False,
+        **overrides: typing.Any,
+    ) -> typing.Any:
         context = {}
         if _filepath is not None:
             context["config_path"] = _filepath
@@ -97,14 +107,22 @@ class ConfigurationFactory:
         return kwargs
 
     def emit(
-        self, output_path, _filepath=None, _ignore_options=True, **overrides
-    ):
+        self,
+        output_path: os.PathLike,
+        _filepath: typing.Optional[os.PathLike] = None,
+        _ignore_options: typing.Boolean = True,
+        **overrides: typing.Any,
+    ) -> dict:
         kwargs = self.parse(
             _filepath=_filepath, _ignore_options=_ignore_options, **overrides
         )
         return autoemit_config(output_path, kwargs, group=self.section)
 
-    def partial(self, _filepath=None, **overrides):
+    def partial(
+        self,
+        _filepath: typing.Optional[os.PathLike] = None,
+        **overrides: typing.Any,
+    ) -> typing.Callable:
         """
         Generate a partial function using the passed configurations.
         """
