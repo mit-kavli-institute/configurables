@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import typing
 from dataclasses import dataclass
 from functools import partial
@@ -21,8 +23,8 @@ class Option:
 
 @dataclass
 class ConfigurationBuilder:
-    parameters: typing.Dict
-    options: typing.Dict
+    parameters: dict
+    options: dict
     function: typing.Callable
 
     def add_parameter(self, name, type):
