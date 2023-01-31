@@ -9,9 +9,9 @@ from configurables.parse import CFG, PARSING_REGISTRY, autoparse_config
 def configure(
     target: typing.Callable,
     config_path: typing.Union[str, os.PathLike],
-    config_group: typing.Union[None, str] = None,
-    extension_override: typing.Union[None, str] = None,
-):
+    config_group: typing.Optional[str] = None,
+    extension_override: typing.Optional[str] = None,
+) -> typing.Callable:
     """
     A quick wrapper for configuring callables. This interface provides no
     type checking, default parameters, or os envrionment/command overrides.
@@ -41,7 +41,7 @@ def configure(
     return target(**config)
 
 
-def param(name, type=str):
+def param(name: str, type=str) -> typing.Callable:
     """
     A decorator to add a required parameter to a ConfigurationBuilder. This
     functionality allows type casting to occur.
