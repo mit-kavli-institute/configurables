@@ -82,7 +82,7 @@ def param(name: str, type=str) -> typing.Callable:
     return _internal
 
 
-def option(name: str, type=str, default: typing.Any = None):
+def option(name: str, type=str, default: typing.Any = None) -> typing.Callable:
     """
     A decorator to add an optional parameter to a ConfigurationBuilder. This
     functionality allows type casting to occur as well as providing a default
@@ -128,7 +128,7 @@ def option(name: str, type=str, default: typing.Any = None):
 
 def configurable(
     config_section: str, order: typing.Optional[ResolutionDefinition] = None
-):
+) -> typing.Callable:
     """
     The top-level decorator to fully bind a callable.
 
