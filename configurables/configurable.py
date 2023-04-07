@@ -1,17 +1,24 @@
+from __future__ import annotations
+
 import os
 import pathlib
 import typing
 
 from configurables.core import ConfigurationBuilder, ConfigurationFactory
-from configurables.parse import CFG, PARSING_REGISTRY, autoparse_config
+from configurables.parse import (
+    CFG,
+    PARSING_REGISTRY,
+    ResolutionDefinition,
+    autoparse_config,
+)
 
 
 def configure(
     target: typing.Callable,
     config_path: typing.Union[str, os.PathLike],
-    config_group: typing.Union[None, str] = None,
-    extension_override: typing.Union[None, str] = None,
-):
+    config_group: typing.Optional[str] = None,
+    extension_override: typing.Optional[str] = None,
+) -> typing.Callable:
     """
     A quick wrapper for configuring callables. This interface provides no
     type checking, default parameters, or os envrionment/command overrides.
@@ -41,7 +48,7 @@ def configure(
     return target(**config)
 
 
-def param(name, type=str):
+def param(name: str, type=str) -> typing.Callable:
     """
     A decorator to add a required parameter to a ConfigurationBuilder. This
     functionality allows type casting to occur.
@@ -79,7 +86,7 @@ def param(name, type=str):
     return _internal
 
 
-def option(name, type=str, default=None):
+def option(name: str, type=str, default: typing.Any = None) -> typing.Callable:
     """
     A decorator to add an optional parameter to a ConfigurationBuilder. This
     functionality allows type casting to occur as well as providing a default
@@ -123,7 +130,9 @@ def option(name, type=str, default=None):
     return _internal
 
 
-def configurable(config_section, order=None):
+def configurable(
+    config_section: str, order: typing.Optional[ResolutionDefinition] = None
+) -> typing.Callable:
     """
     The top-level decorator to fully bind a callable.
 
