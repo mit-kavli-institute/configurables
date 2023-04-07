@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import typing
 from dataclasses import dataclass
 from functools import partial
@@ -21,8 +23,8 @@ class Option:
 
 @dataclass
 class ConfigurationBuilder:
-    parameters: typing.Dict
-    options: typing.Dict
+    parameters: dict
+    options: dict
     function: typing.Callable
 
     def add_parameter(self, name, type):
@@ -62,6 +64,10 @@ class ConfigurationFactory:
 
         return _type(raw_value)
 
+    def __call__(self, _filepath=None, **overrides):
+        kwargs = self.parse(_filepath=_filepath, **overrides)
+        return self.builder.function(**kwargs)
+
     def parse(self, _filepath=None, _ignore_options=False, **overrides):
         context = {}
         if _filepath is not None:
@@ -70,16 +76,16 @@ class ConfigurationFactory:
         kwargs = {}
         parsed_opts = self.configuration_order.load(**context)
         for parameter in self.builder.parameters.keys():
-            kwargs[parameter] = self._resolve_param(parameter, parsed_opts)
+            try:
+                kwargs[parameter] = self._resolve_param(parameter, parsed_opts)
+            except KeyError:
+                kwargs[parameter] = overrides[parameter]
+
         if not _ignore_options:
             for option in self.builder.options.keys():
                 kwargs[option] = self._resolve_option(option, parsed_opts)
         kwargs.update(overrides)
         return kwargs
-
-    def __call__(self, _filepath=None, **overrides):
-        kwargs = self.parse(_filepath=_filepath, **overrides)
-        return self.builder.function(**kwargs)
 
     def emit(
         self, output_path, _filepath=None, _ignore_options=True, **overrides
