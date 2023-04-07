@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import configparser
 import operator
 import os
@@ -5,14 +7,86 @@ import pathlib
 import sys
 import typing
 
-import deal
-
-from configurables.resolution import ResolutionDefinition
-
 PARSING_REGISTRY = {}  # type: typing.Dict[str, typing.Any]
 
+RHS = typing.Union["ResolutionDefinition", "Interpreter"]
+LHS = RHS
+OP = typing.Callable[[LHS, RHS], "ResolutionDefinition"]
 
-def autoparse_config(path: pathlib.Path, group=None) -> dict:
+
+class InvalidOrdering(Exception):
+    """
+    Raised when the given set of ordering pairs results in something
+    impossible to resolve.
+
+    Example
+    -------
+    ENV > ENV
+    ENV > CFG > ENV
+
+    etc.
+    """
+
+    pass
+
+
+class ResolutionDefinition:
+    """
+    This class handles the definitions of resolution orderings. Its most
+    dynamic behavior is overriding ``>`` and ``<`` operators. This allows
+    developers to augment resolution orderings.
+
+    Example
+    -------
+    >>> import configurables as conf
+    >>>
+    >>> @conf.configurables("Test", ordering=conf.ENV > conf.CFG)
+    >>> @conf.param("key", type=str)
+    >>> def load(key):
+    >>>     print(key)
+
+    This particular example would have ``configurables`` use values found
+    in ENV (environmental variables) *above* values found in configuration
+    files.
+
+    Notes
+    -----
+    By default orderings are as follows CLI > CFG > ENV.
+    """
+
+    def __init__(self, first_element: "RHS"):
+        self.interpreter_order = [first_element]
+
+    def __lt__(self, rhs: "RHS"):
+        if rhs in self.interpreter_order:
+            raise InvalidOrdering()
+
+        self.interpreter_order.insert(0, rhs)
+        return self
+
+    def __gt__(self, rhs: "RHS") -> "ResolutionDefinition":
+        if rhs in self.interpreter_order:
+            raise InvalidOrdering()
+
+        self.interpreter_order.append(rhs)
+        return self
+
+    def __repr__(self):
+        return " > ".join(map(str, self.interpreter_order))
+
+    def load(self, **context: typing.Any) -> dict:
+        payload = {}
+
+        for interpreter in self.interpreter_order:
+            kwargs = interpreter.load(**context)
+            payload.update(kwargs)
+
+        return payload
+
+
+def autoparse_config(
+    path: pathlib.Path, group: typing.Optional[str] = None
+) -> dict:
     path = pathlib.Path(path)
     global PARSING_REGISTRY
     func = PARSING_REGISTRY[path.suffix]
@@ -21,7 +95,7 @@ def autoparse_config(path: pathlib.Path, group=None) -> dict:
     return func(path, group)
 
 
-def register(*extensions):
+def register(*extensions: str) -> typing.Callable:
     def decoration(func):
         global PARSING_REGISTRY
         for extension in extensions:
@@ -31,12 +105,10 @@ def register(*extensions):
     return decoration
 
 
-@deal.raises(KeyError)
-@deal.pre(lambda _: _.config_path.exists())
-@deal.pre(lambda _: isinstance(_.config_path, pathlib.Path))
-@deal.pure
 @register(".ini", ".conf")
-def parse_ini(config_path: pathlib.Path, key: str):
+def parse_ini(
+    config_path: pathlib.Path, key: str
+) -> configparser.SectionProxy:
     """Parse an ini file.
     Parameters
     ----------
@@ -57,21 +129,18 @@ def parse_ini(config_path: pathlib.Path, key: str):
     return config[key]
 
 
-RHS = typing.Union[ResolutionDefinition, "Interpreter"]
-
-
 class Interpreter:
-    name: typing.Union[str, None] = None
+    name: typing.Optional[str] = None
 
-    def load(self, **context):
+    def load(self, **context: typing.Any) -> dict:
         return self.interpret(context)
 
-    def interpret(self, context):
+    def interpret(self, context: dict) -> dict:
         raise NotImplementedError
 
-    def _coalese(self, rhs, op):
+    def _coalese(self, rhs: RHS, op: OP) -> ResolutionDefinition:
         if isinstance(rhs, ResolutionDefinition):
-            lhs = self
+            lhs = self  # type: LHS
         else:
             lhs = ResolutionDefinition(self)
         return op(lhs, rhs)
@@ -92,18 +161,18 @@ class Interpreter:
 class Env(Interpreter):
     name = "ENV"
 
-    def interpret(self, context):
-        return os.environ
+    def interpret(self, context: dict) -> dict:
+        return dict(os.environ)
 
 
 class Cli(Interpreter):
     name = "CLI"
 
-    def interpret(self, context):
+    def interpret(self, context: dict) -> dict:
         args = sys.argv
         nargs = len(args)
         cursor = 1
-        accumulator = {}
+        accumulator = {}  # type: dict[str, typing.Union[str, list[str], None]]
         while cursor < nargs:
             arg = args[cursor]
             if arg.startswith("--"):
@@ -114,12 +183,12 @@ class Cli(Interpreter):
                 while cursor < nargs and not args[cursor].startswith("--"):
                     arg = args[cursor]
                     current_val = accumulator[param_name]
-                    if current_val is None:
-                        accumulator[param_name] = arg
-                    elif isinstance(current_val, str):
+                    if isinstance(current_val, str):
                         accumulator[param_name] = [current_val, arg]
-                    else:
-                        accumulator[param_name].append(arg)
+                    elif isinstance(current_val, list):
+                        current_val.append(arg)
+                    elif current_val is None:
+                        accumulator[param_name] = arg
                     cursor += 1
         return accumulator
 
@@ -127,7 +196,7 @@ class Cli(Interpreter):
 class Cfg(Interpreter):
     name = "CFG"
 
-    def interpret(self, context):
+    def interpret(self, context: dict) -> dict:
         try:
             config_path = context["config_path"]
         except KeyError:
