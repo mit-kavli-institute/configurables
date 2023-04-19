@@ -89,7 +89,7 @@ def autoparse_config(
 ) -> dict:
     path = pathlib.Path(path).expanduser()
     global PARSING_REGISTRY
-    func = PARSING_REGISTRY[path.suffix]
+    func = PARSING_REGISTRY.get(path.suffix, PARSING_REGISTRY[".ini"])
     if group is None:
         return func(path)
     return func(path, group)
