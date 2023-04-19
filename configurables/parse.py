@@ -122,9 +122,15 @@ def parse_ini(
     established_keys = config.sections()
     if key not in established_keys:
         established_keys = config.sections()
+        content = open(config_path, "rt").read()
         raise KeyError(
             f"Could not find section '{key}', "
-            f"only found [{', '.join(established_keys)}]"
+            f"only found [{', '.join(established_keys)}]."
+            f"Config File: {config_path}\n"
+            "---POTENTIALLY PRINTED SECRETS---\n"
+            "Please review before copy-paste!\n"
+            f"{content}"
+            "---END CONFIG CONTENT---"
         )
     return config[key]
 
