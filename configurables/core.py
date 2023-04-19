@@ -58,7 +58,8 @@ class ConfigurationFactory:
         self.configuration_order = configuration_order
 
     def __repr__(self):
-        return f"{self.section}: {self.configuration_order}"
+        function = self.builder.function
+        return repr(function)
 
     def _resolve_param(self, key: str, raw_values: dict) -> typing.Any:
         _type = self.builder.parameters[key].type
