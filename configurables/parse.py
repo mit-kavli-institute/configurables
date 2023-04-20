@@ -118,11 +118,12 @@ def parse_ini(
         The group of the ini file to read in as keyword arguments
     """
     config = configparser.ConfigParser()
-    config.read(config_path)
+    expanded = config_path.expanduser()
+    config.read(expanded)
     established_keys = config.sections()
     if key not in established_keys:
         established_keys = config.sections()
-        content = open(config_path, "rt").read()
+        content = open(expanded, "rt").read()
         raise KeyError(
             f"Could not find section '{key}', "
             f"only found [{', '.join(established_keys)}]."
