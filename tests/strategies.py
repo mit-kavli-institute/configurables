@@ -37,18 +37,15 @@ def write_cli_configuration(monkeypatch, configuration):
     monkeypatch.setattr("sys.argv", argv)
 
 
-@st.composite
-def configurations(draw):
-    return draw(
-        st.dictionaries(
-            st.text(min_size=1, alphabet=CONFIG_PARSE_ALPHABET).map(str.lower),
-            st.one_of(
-                st.text(alphabet=CONFIG_PARSE_ALPHABET, min_size=1),
-                st.integers(),
-                st.floats(),
-            ),
-            min_size=1,
-        )
+def configurations():
+    return st.dictionaries(
+        st.text(min_size=1, alphabet=CONFIG_PARSE_ALPHABET).map(str.lower),
+        st.one_of(
+            st.text(alphabet=CONFIG_PARSE_ALPHABET, min_size=1),
+            st.integers(),
+            st.floats(),
+        ),
+        min_size=1,
     )
 
 
