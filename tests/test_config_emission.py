@@ -2,7 +2,7 @@ import pathlib
 from math import isnan
 from tempfile import TemporaryDirectory
 
-from hypothesis import given
+from hypothesis import given, note
 
 from configurables import configurable, param
 
@@ -29,9 +29,11 @@ def test_emission_equilvancy(header, configuration):
                 f = param(key, type=type(value))(f)
         f = configurable(header)(f)
 
-        test_path = f.emit(emit_path, filepath)
+        test_path = f.emit(emit_path, _filepath=filepath)
 
         result = f(test_path)
+        note(open(filepath).read())
+        note(open(test_path).read())
         for key, value in result.items():
             if isinstance(value, float) and isnan(value):
                 assert isnan(configuration[key])

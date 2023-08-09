@@ -78,13 +78,15 @@ class ConfigurationFactory:
     def __call__(
         self,
         _filepath: typing.Optional[pathlib.Path] = None,
+        _section: typing.Optiona[str] = None,
         **overrides: typing.Any,
     ) -> typing.Any:
-        kwargs = self.parse(_filepath=_filepath, **overrides)
+        kwargs = self.parse(_section, _filepath=_filepath, **overrides)
         return self.builder.function(**kwargs)
 
     def parse(
         self,
+        section,
         _filepath: typing.Optional[pathlib.Path] = None,
         _ignore_options: bool = False,
         **overrides: typing.Any,
@@ -92,7 +94,9 @@ class ConfigurationFactory:
         context = {}  # type: typing.Dict[str, typing.Any]
         if _filepath is not None:
             context["config_path"] = _filepath
-        context["parse_kwargs"] = {"group": self.section}
+        if section is None:
+            section = self.section
+        context["parse_kwargs"] = {"group": section}
         kwargs = {}
         parsed_opts = self.configuration_order.load(**context)
         for parameter in self.builder.parameters.keys():
@@ -110,22 +114,28 @@ class ConfigurationFactory:
     def emit(
         self,
         output_path: pathlib.Path,
+        _section: typing.Optional[str] = None,
         _filepath: typing.Optional[pathlib.Path] = None,
         _ignore_options: bool = True,
         **overrides: typing.Any,
     ) -> dict:
         kwargs = self.parse(
-            _filepath=_filepath, _ignore_options=_ignore_options, **overrides
+            _section,
+            _filepath=_filepath,
+            _ignore_options=_ignore_options,
+            **overrides,
         )
-        return autoemit_config(output_path, kwargs, group=self.section)
+        section = self.section if _section is None else _section
+        return autoemit_config(output_path, kwargs, group=section)
 
     def partial(
         self,
         _filepath: typing.Optional[pathlib.Path] = None,
+        _section: typing.Optional[str] = None,
         **overrides: typing.Any,
     ) -> typing.Callable:
         """
         Generate a partial function using the passed configurations.
         """
-        kwargs = self.parse(_filepath=_filepath, **overrides)
+        kwargs = self.parse(_section, _filepath=_filepath, **overrides)
         return partial(self.builder.function, **kwargs)

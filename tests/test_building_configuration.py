@@ -1,11 +1,11 @@
 import pathlib
 from math import isnan
-from tempfile import TemporaryDirectory
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 from hypothesis import given, note
 from hypothesis import strategies as st
 
-from configurables import configurable, option, param
+from configurables import configurable, configure, option, param
 from configurables.core import ConfigurationBuilder
 
 from . import strategies as c_st
@@ -69,8 +69,8 @@ def test_building_configurable_options(header, configuration):
 @given(c_st.config_strings(), c_st.configurations())
 def test_partial(header, configuration):
     with TemporaryDirectory() as folder:
-        filepath = pathlib.Path(folder) / pathlib.Path("config.ini")
-        note(filepath)
+        filepath = pathlib.Path(folder) / "config.ini"
+        note(str(filepath))
         with open(filepath, "w+") as fout:
             c_st.write_ini_configuration(fout, header, configuration)
 
@@ -129,18 +129,37 @@ def test_overrides(data, header, configuration):
                 assert value == ref
 
 
+@given(c_st.multi_configurations(), st.data())
+def test_group_override(configuration, data):
+    target_header = data.draw(st.sampled_from(sorted(configuration.keys())))
+    reference_configuration = configuration[target_header]
+    with TemporaryDirectory() as folder:
+        filepath = pathlib.Path(folder) / "config.ini"
+        with open(filepath, "w+") as fout:
+            c_st.write_multi_ini_configuration(fout, configuration)
+        f = _reflector
+        for k, v in reference_configuration.items():
+            if type(v) == str:
+                f = param(k)(f)
+            else:
+                f = param(k, type=type(v))(f)
+        f = configurable()(f)
+        result = f(filepath, _section=target_header)
+        for k, v in result.items():
+            ref_value = reference_configuration[k]
+            if isinstance(ref_value, float) and isnan(ref_value):
+                assert isnan(v)
+            else:
+                assert v == ref_value
+
+
 @given(st.data(), c_st.config_strings(), c_st.configurations())
 def test_pass_through(data, header, configuration):
     f = _reflector
     complete_override = {}
     for key in configuration.keys():
         complete_override[key] = data.draw(
-            st.one_of(
-                st.none(),
-                st.integers(),
-                st.floats(),
-                st.text()
-            )
+            st.one_of(st.none(), st.integers(), st.floats(), st.text())
         )
 
     for key, value in configuration.items():
@@ -158,3 +177,22 @@ def test_pass_through(data, header, configuration):
             assert isnan(ref_value)
         else:
             assert value == ref_value
+
+
+@given(c_st.multi_configurations(), st.data())
+def test_configuration_override(configuration, data):
+    target_header = data.draw(st.sampled_from(sorted(configuration.keys())))
+    reference_configuration = configuration[target_header]
+
+    with NamedTemporaryFile("w+t") as tmpfile:
+        c_st.write_multi_ini_configuration(tmpfile, configuration)
+        result = configure(
+            _reflector,
+            tmpfile.name,
+            config_group=target_header,
+            extension_override=".ini",
+        )
+    assert set(result.keys()) == set(reference_configuration.keys())
+
+    for k, v in result.items():
+        assert v == str(reference_configuration[k])
