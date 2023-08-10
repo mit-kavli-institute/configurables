@@ -41,10 +41,10 @@ def configure(
 
     if extension_override is not None:
         lookup = PARSING_REGISTRY[extension_override]
+        config = lookup(path, config_group)
     else:
-        lookup = autoparse_config(path, config_group)
+        config = autoparse_config(path, config_group)
 
-    config = lookup(path, config_group)
     return target(**config)
 
 
