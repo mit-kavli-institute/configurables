@@ -132,6 +132,7 @@ def test_overrides(data, header, configuration):
 @given(c_st.multi_configurations(), st.data())
 def test_group_override(configuration, data):
     target_header = data.draw(st.sampled_from(sorted(configuration.keys())))
+    other_header = data.draw(st.sampled_from(sorted(configuration.keys())))
     reference_configuration = configuration[target_header]
     with TemporaryDirectory() as folder:
         filepath = pathlib.Path(folder) / "config.ini"
@@ -143,7 +144,7 @@ def test_group_override(configuration, data):
                 f = param(k)(f)
             else:
                 f = param(k, type=type(v))(f)
-        f = configurable()(f)
+        f = configurable(other_header)(f)
         result = f(filepath, _section=target_header)
         for k, v in result.items():
             ref_value = reference_configuration[k]
