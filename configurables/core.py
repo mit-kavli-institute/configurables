@@ -47,6 +47,12 @@ class ConfigurationBuilder:
 
 
 class ConfigurationFactory:
+    """
+    This class maintains the schema context when defining parameters and
+    options. Using the maintained definition we are able to call the wrapped
+    function, provide overrides, or emit template configurations.
+    """
+
     def __init__(
         self,
         config_builder: ConfigurationBuilder,
@@ -81,6 +87,21 @@ class ConfigurationFactory:
         _section: typing.Optiona[str] = None,
         **overrides: typing.Any,
     ) -> typing.Any:
+        """
+        Override __call__ protocol to allow transparent evocation of wrapped
+        function.
+
+        Parameters
+        ----------
+        _filepath: Optional[pathlib.Path]
+            The filepath to the configuration file to use.
+        _section: Optional[str]
+            Override the configuration section to use. If left blank then
+            the default provided during schema creation will be used.
+        **overrides: Any
+            Keyword overrides which will be used. Any keys provided here will
+            override any configuration.
+        """
         kwargs = self.parse(_section, _filepath=_filepath, **overrides)
         return self.builder.function(**kwargs)
 
@@ -90,13 +111,35 @@ class ConfigurationFactory:
         _filepath: typing.Optional[pathlib.Path] = None,
         _ignore_options: bool = False,
         **overrides: typing.Any,
-    ) -> typing.Any:
+    ) -> dict[str, typing.Any]:
+        """
+        Given the schema configuration, parse any provided overrides, and load
+        configurations from the relevant configuration file, environment
+        variables, or command line definitions.
+
+        Parameters
+        ----------
+        section: str
+            The section to use against a provided configuration file.
+        _filepath: Optional[pathlib.Path]
+            An optional configuration file to pull values from.
+        _ignore_options: bool
+            If true no defined options will be populated using configuration
+            files, environment variables, or command line values. However
+            keyword overrides will still affect any defined option.
+        **overrides: Any
+            Override any keyword used by the wrapped function.
+
+        Returns
+        -------
+        dict[str, Any]
+        """
         context = {}  # type: typing.Dict[str, typing.Any]
         if _filepath is not None:
             context["config_path"] = _filepath
         if section is None:
             section = self.section
-        context["parse_kwargs"] = {"group": section}
+        context["parse_kwargs"] = {"section": section}
         kwargs = {}
         parsed_opts = self.configuration_order.load(**context)
         for parameter in self.builder.parameters.keys():
@@ -126,7 +169,7 @@ class ConfigurationFactory:
             **overrides,
         )
         section = self.section if _section is None else _section
-        return autoemit_config(output_path, kwargs, group=section)
+        return autoemit_config(output_path, kwargs, section=section)
 
     def partial(
         self,
