@@ -84,7 +84,7 @@ class ConfigurationFactory:
     def __call__(
         self,
         _filepath: typing.Optional[pathlib.Path] = None,
-        _section: typing.Optiona[str] = None,
+        _section: typing.Optional[str] = None,
         **overrides: typing.Any,
     ) -> typing.Any:
         """
