@@ -23,6 +23,15 @@ def write_ini_configuration(fout, header, configuration):
     note(fout.read())
 
 
+def write_multi_ini_configuration(fout, configuration):
+    config = configparser.ConfigParser()
+    for header, subconfiguration in configuration.items():
+        config[header] = subconfiguration
+    config.write(fout)
+    fout.seek(0)
+    note(fout.read())
+
+
 def write_env_configuration(monkeypatch, configuration):
     for key, value in configuration.items():
         monkeypatch.setenv(key, str(value))
@@ -37,18 +46,23 @@ def write_cli_configuration(monkeypatch, configuration):
     monkeypatch.setattr("sys.argv", argv)
 
 
-@st.composite
-def configurations(draw):
-    return draw(
-        st.dictionaries(
-            st.text(min_size=1, alphabet=CONFIG_PARSE_ALPHABET).map(str.lower),
-            st.one_of(
-                st.text(alphabet=CONFIG_PARSE_ALPHABET, min_size=1),
-                st.integers(),
-                st.floats(),
-            ),
-            min_size=1,
-        )
+def configurations():
+    return st.dictionaries(
+        st.text(min_size=1, alphabet=CONFIG_PARSE_ALPHABET).map(str.lower),
+        st.one_of(
+            st.text(alphabet=CONFIG_PARSE_ALPHABET, min_size=1),
+            st.integers(),
+            st.floats(),
+        ),
+        min_size=1,
+    )
+
+
+def multi_configurations():
+    return st.dictionaries(
+        st.text(min_size=1, alphabet=CONFIG_PARSE_ALPHABET),
+        configurations(),
+        min_size=1,
     )
 
 

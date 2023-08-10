@@ -41,10 +41,10 @@ def configure(
 
     if extension_override is not None:
         lookup = PARSING_REGISTRY[extension_override]
+        config = lookup(path, config_group)
     else:
-        lookup = autoparse_config(path, config_group)
+        config = autoparse_config(path, config_group)
 
-    config = lookup(path, config_group)
     return target(**config)
 
 
@@ -131,15 +131,18 @@ def option(name: str, type=str, default: typing.Any = None) -> typing.Callable:
 
 
 def configurable(
-    config_section: str, order: typing.Optional[ResolutionDefinition] = None
+    config_section: typing.Optional[str] = None,
+    order: typing.Optional[ResolutionDefinition] = None,
 ) -> typing.Callable:
     """
     The top-level decorator to fully bind a callable.
 
     Parameters
     ----------
-    config_section: str, List[str]
-        The configuration section to resolve parameters from.
+    config_section: str, optional
+        The configuration section to resolve parameters from. If left
+        blank, it will be up to the callee to provide a section during
+        runtime.
     """
 
     def _internal(config_builder):

@@ -2,13 +2,6 @@
 Configurables
 =============
 
-
-.. image:: https://img.shields.io/pypi/v/configurables.svg
-        :target: https://pypi.python.org/pypi/configurables
-
-.. image:: https://img.shields.io/travis/WilliamCFong/configurables.svg
-        :target: https://travis-ci.com/WilliamCFong/configurables
-
 .. image:: https://readthedocs.org/projects/configurables/badge/?version=latest
         :target: https://configurables.readthedocs.io/en/latest/?version=latest
         :alt: Documentation Status

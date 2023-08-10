@@ -8,11 +8,11 @@ EMISSION_REGISTRY = {}  # type: typing.Dict[str, typing.Any]
 def autoemit_config(
     path: pathlib.Path,
     configuration: typing.Dict[typing.Any, typing.Any],
-    group: typing.Optional[str] = None,
+    section: typing.Optional[str] = None,
 ) -> dict:
     global EMISSION_REGISTRY
     func = EMISSION_REGISTRY[path.suffix]
-    return func(path, group, configuration)
+    return func(path, section, configuration)
 
 
 def register(*extensions: str) -> typing.Callable:
