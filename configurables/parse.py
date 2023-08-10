@@ -71,9 +71,6 @@ class ResolutionDefinition:
         self.interpreter_order.append(rhs)
         return self
 
-    def __repr__(self):
-        return " > ".join(map(str, self.interpreter_order))
-
     def load(self, **context: typing.Any) -> dict:
         payload = {}
 

@@ -43,13 +43,15 @@ def test_building_configurable(header, configuration):
                 assert value == configuration[key]
 
 
-@given(c_st.config_strings(), c_st.configurations())
-def test_building_configurable_options(header, configuration):
+@given(c_st.config_strings(), c_st.configurations(), st.data())
+def test_building_configurable_options(header, configuration, data):
+    missing_param = data.draw(st.sampled_from(sorted(configuration.keys())))
+    ref_value = configuration.pop(missing_param)
     with TemporaryDirectory() as folder:
         filepath = pathlib.Path(folder) / pathlib.Path("config.ini")
-        note(filepath)
+        note(str(filepath))
         with open(filepath, "w+") as fout:
-            c_st.write_ini_configuration(fout, header, {})
+            c_st.write_ini_configuration(fout, header, configuration)
 
         f = _reflector
         for key, value in configuration.items():
@@ -57,8 +59,11 @@ def test_building_configurable_options(header, configuration):
                 f = option(key, default=value)(f)
             else:
                 f = option(key, type=type(value), default=value)(f)
+        f = option(missing_param, type=type(ref_value), default=ref_value)(f)
         f = configurable(header)(f)
         result = f(filepath)
+
+        configuration[missing_param] = ref_value
         for key, value in result.items():
             if isinstance(value, float) and isnan(value):
                 assert isnan(configuration[key])

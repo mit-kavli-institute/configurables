@@ -5,8 +5,10 @@ import pathlib
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 from hypothesis import given
+from hypothesis import strategies as st
 
 from configurables import configure
+from configurables.configurable import configurable, param
 
 from . import strategies as c_st
 
@@ -43,3 +45,17 @@ def test_loading_ini(header, configuration):
 
         for key, value in result.items():
             assert value == str(configuration[key])
+
+
+@given(c_st.multi_configurations(), st.data())
+def test_repr(configuration, data):
+    target_header = data.draw(st.sampled_from(sorted(configuration.keys())))
+    reference_configuration = configuration[target_header]
+
+    f = _uno_reverse
+    for k, v in reference_configuration.items():
+        f = param(k, type=type(v))(f)
+
+    f = configurable("whatever")(f)
+
+    assert repr(f) == repr(_uno_reverse)
