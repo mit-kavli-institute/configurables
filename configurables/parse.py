@@ -71,9 +71,6 @@ class ResolutionDefinition:
         self.interpreter_order.append(rhs)
         return self
 
-    def __repr__(self):
-        return " > ".join(map(str, self.interpreter_order))
-
     def load(self, **context: typing.Any) -> dict:
         payload = {}
 
@@ -85,14 +82,14 @@ class ResolutionDefinition:
 
 
 def autoparse_config(
-    path: pathlib.Path, group: typing.Optional[str] = None
+    path: pathlib.Path, section: typing.Optional[str] = None
 ) -> dict:
     path = pathlib.Path(path).expanduser()
     global PARSING_REGISTRY
     func = PARSING_REGISTRY.get(path.suffix, PARSING_REGISTRY[".ini"])
-    if group is None:
+    if section is None:
         return func(path)
-    return func(path, group)
+    return func(path, section)
 
 
 def register(*extensions: str) -> typing.Callable:
@@ -115,7 +112,7 @@ def parse_ini(
     config_path: pathlib.Path
         The path to the desired ini configuration file
     key: str
-        The group of the ini file to read in as keyword arguments
+        The section of the ini file to read in as keyword arguments
     """
     config = configparser.ConfigParser()
     expanded = config_path.expanduser()
