@@ -30,7 +30,7 @@ def test_building_configurable(header, configuration):
 
         f = _reflector
         for key, value in configuration.items():
-            if type(value) == str:
+            if isinstance(value, str):
                 f = param(key)(f)
             else:
                 f = param(key, type=type(value))(f)
@@ -55,7 +55,7 @@ def test_building_configurable_options(header, configuration, data):
 
         f = _reflector
         for key, value in configuration.items():
-            if type(value) == str:
+            if isinstance(value, str):
                 f = option(key, default=value)(f)
             else:
                 f = option(key, type=type(value), default=value)(f)
@@ -81,7 +81,7 @@ def test_partial(header, configuration):
 
         f = _reflector
         for key, value in configuration.items():
-            if type(value) == str:
+            if isinstance(value, str):
                 f = param(key)(f)
             else:
                 f = param(key, type=type(value))(f)
@@ -113,7 +113,7 @@ def test_overrides(data, header, configuration):
 
         f = _reflector
         for key, value in configuration.items():
-            if type(value) == str:
+            if isinstance(value, str):
                 f = param(key)(f)
             else:
                 f = param(key, type=type(value))(f)
@@ -145,7 +145,7 @@ def test_group_override(configuration, data):
             c_st.write_multi_ini_configuration(fout, configuration)
         f = _reflector
         for k, v in reference_configuration.items():
-            if type(v) == str:
+            if isinstance(v, str):
                 f = param(k)(f)
             else:
                 f = param(k, type=type(v))(f)
@@ -169,7 +169,7 @@ def test_pass_through(data, header, configuration):
         )
 
     for key, value in configuration.items():
-        if type(value) == str:
+        if isinstance(value, str):
             f = param(key)(f)
         else:
             f = param(key, type=type(value))(f)
