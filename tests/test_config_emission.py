@@ -23,7 +23,7 @@ def test_emission_equilvancy(header, configuration):
 
         f = _reflector
         for key, value in configuration.items():
-            if type(value) == str:
+            if isinstance(value, str):
                 f = param(key)(f)
             else:
                 f = param(key, type=type(value))(f)
