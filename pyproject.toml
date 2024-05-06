@@ -5,6 +5,29 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "configurables"
 dynamic = ["version"]
+description = "A package which allows seamless passing of configuration file variables to functions."
+readme = README.md
+requires-python = ">=3.9"
+license = {file = "LICENSE"}
+keywords = ["configurables", "configuration", "development", "qol"]
+
+authors = [
+    {name = "William Fong", email = "willfong@mit.edu"}
+]
+maintainers = [
+    {name = "William Fong", email = "willfong@mit.edu"}
+]
+
+classifiers = [
+    "Development Status :: 5 Production",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Configuration",
+    "License :: OSI Approvied :: MIT License",
+    "Programming Language :: Python :: 3",
+]
+
+[project.urls]
+"Homepage" = "https://tessgit.mit.edu/wcfong/configurables"
 
 [project.optional-dependencies]
 dev = [
