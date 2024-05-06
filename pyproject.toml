@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "configurables"
 dynamic = ["version"]
 description = "A package which allows seamless passing of configuration file variables to functions."
-readme = README.md
+readme = "README.md"
 requires-python = ">=3.9"
 license = {file = "LICENSE"}
 keywords = ["configurables", "configuration", "development", "qol"]
