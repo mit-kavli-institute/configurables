@@ -32,20 +32,26 @@ You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/WilliamCFong/configurables
+    $ git clone git://github.com/mit-kavli-institute/configurables
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl -OJL https://github.com/WilliamCFong/configurables/tarball/master
+    $ curl -OJL https://github.com/mit-kavli-institute/configurables/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
 .. code-block:: console
 
-    $ python setup.py install
+    $ pip install .
+
+For development, install in editable mode with development dependencies:
+
+.. code-block:: console
+
+    $ pip install -e ".[dev]"
 
 
-.. _Github repo: https://github.com/WilliamCFong/configurables
-.. _tarball: https://github.com/WilliamCFong/configurables/tarball/master
+.. _Github repo: https://github.com/mit-kavli-institute/configurables
+.. _tarball: https://github.com/mit-kavli-institute/configurables/tarball/master
