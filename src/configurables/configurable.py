@@ -1,20 +1,26 @@
+from __future__ import annotations
+
 import os
 import pathlib
 import typing
 
-import deal
-
 from configurables.core import ConfigurationBuilder, ConfigurationFactory
-from configurables.parse import PARSING_REGISTRY, autoparse_config
+from configurables.parse import (
+    CFG,
+    CLI,
+    ENV,
+    PARSING_REGISTRY,
+    ResolutionDefinition,
+    autoparse_config,
+)
 
 
-@deal.pre(lambda _: pathlib.Path(_.config_path).exists())
 def configure(
     target: typing.Callable,
-    config_path: typing.Union[str, bytes, os.PathLike],
-    config_group: typing.Union[None, str] = None,
-    extension_override: typing.Union[None, str] = None,
-):
+    config_path: typing.Union[str, os.PathLike],
+    config_group: typing.Optional[str] = None,
+    extension_override: typing.Optional[str] = None,
+) -> typing.Callable:
     """
     A quick wrapper for configuring callables. This interface provides no
     type checking, default parameters, or os envrionment/command overrides.
@@ -37,15 +43,14 @@ def configure(
 
     if extension_override is not None:
         lookup = PARSING_REGISTRY[extension_override]
+        config = lookup(path, config_group)
     else:
-        lookup = autoparse_config(path, config_group)
+        config = autoparse_config(path, config_group)
 
-    config = lookup(path, config_group)
     return target(**config)
 
 
-@deal.pre(lambda _: len(_.name) > 0)
-def define_param(name, type=str):
+def param(name: str, type: typing.Callable = str) -> typing.Callable:
     """
     A decorator to add a required parameter to a ConfigurationBuilder. This
     functionality allows type casting to occur.
@@ -60,8 +65,8 @@ def define_param(name, type=str):
     Examples
     --------
     >>> @configurable("Credentials")
-    >>> @define_param("username", type=str)
-    >>> @define_param("password", type=str)
+    >>> @param("username", type=str)
+    >>> @param("password", type=str)
     >>> def login(username, password):
     >>>     print(username, "*" * len(password))
     >>>
@@ -69,7 +74,9 @@ def define_param(name, type=str):
     ('someusername', '**********')
     """
 
-    def _internal(obj):
+    def _internal(
+        obj: typing.Union[ConfigurationBuilder, typing.Callable]
+    ) -> ConfigurationBuilder:
         if isinstance(obj, ConfigurationBuilder):
             config_builder = obj
         else:
@@ -83,8 +90,9 @@ def define_param(name, type=str):
     return _internal
 
 
-@deal.pre(lambda _: len(_.name) > 0)
-def define_option(name, type, default=None):
+def option(
+    name: str, type: typing.Callable = str, default: typing.Any = None
+) -> typing.Callable:
     """
     A decorator to add an optional parameter to a ConfigurationBuilder. This
     functionality allows type casting to occur as well as providing a default
@@ -105,8 +113,8 @@ def define_option(name, type, default=None):
     Examples
     --------
     >>> @configurable("Credentials")
-    >>> @define_option("username", type=str, default=os.getlogin())
-    >>> @define_param("password", type=str)
+    >>> @option("username", type=str, default=os.getlogin())
+    >>> @param("password", type=str)
     >>> def login(username, password):
     >>>     print(username, "*" * len(password))
     >>>
@@ -114,7 +122,9 @@ def define_option(name, type, default=None):
     ('willfong', '***********')
     """
 
-    def _internal(obj):
+    def _internal(
+        obj: typing.Union[ConfigurationBuilder, typing.Callable]
+    ) -> ConfigurationBuilder:
         if isinstance(obj, ConfigurationBuilder):
             config_builder = obj
         else:
@@ -128,25 +138,37 @@ def define_option(name, type, default=None):
     return _internal
 
 
-@deal.pre(lambda _: len(_.config_section) > 0)
-def configurable(config_section):
+def configurable(
+    config_section: typing.Optional[str] = None,
+    order: typing.Optional[ResolutionDefinition] = None,
+) -> typing.Callable:
     """
     The top-level decorator to fully bind a callable.
 
     Parameters
     ----------
-    config_section: str, List[str]
-        The configuration section to resolve parameters from.
+    config_section: str, optional
+        The configuration section to resolve parameters from. If left
+        blank, it will be up to the callee to provide a section during
+        runtime.
     """
 
-    def _internal(config_builder):
+    def _internal(
+        config_builder: ConfigurationBuilder
+    ) -> ConfigurationFactory:
         if not isinstance(config_builder, ConfigurationBuilder):
             raise ValueError(
                 "Wrapped function has not "
                 "defined any parameters or options! "
                 f"Instead got {config_builder}"
             )
-        factory = ConfigurationFactory(config_builder, config_section)
+        # Default order is CLI > CFG > ENV
+        default_order = CLI > CFG > ENV
+        factory = ConfigurationFactory(
+            config_builder,
+            config_section or "DEFAULT",
+            default_order if order is None else order
+        )
         return factory
 
     return _internal

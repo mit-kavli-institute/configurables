@@ -6,21 +6,21 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 import configurables as conf
-from configurables import configurable, define_param
+from configurables import configurable, param
 
 
 @configurable("Credentials")
-@define_param("username", type=str)
-@define_param("password", type=str)
+@param("username", type=str)
+@param("password", type=str)
 def login(username, password):
     return username, password
 
 
 @conf.configurable("PipelineSettings")
-@conf.define_param("ra", type=float)
-@conf.define_param("dec", type=float)
-@conf.define_option("n_workers", type=int, default=cpu_count())
-@conf.define_option("output_path", type=pathlib.Path, default="./")
+@conf.param("ra", type=float)
+@conf.param("dec", type=float)
+@conf.option("n_workers", type=int, default=cpu_count())
+@conf.option("output_path", type=pathlib.Path, default="./")
 def run_pipeline(ra, dec, n_workers, output_path):
     return (
         f"RA: {ra}, DEC: {dec}\n"
