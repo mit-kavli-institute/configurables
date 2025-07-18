@@ -63,7 +63,7 @@ class ConfigurationFactory:
         self.section = section
         self.configuration_order = configuration_order
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         function = self.builder.function
         return repr(function)
 
@@ -161,7 +161,7 @@ class ConfigurationFactory:
         _filepath: typing.Optional[pathlib.Path] = None,
         _ignore_options: bool = True,
         **overrides: typing.Any,
-    ) -> dict:
+    ) -> pathlib.Path:
         kwargs = self.parse(
             _section,
             _filepath=_filepath,

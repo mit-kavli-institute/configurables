@@ -7,6 +7,8 @@ import typing
 from configurables.core import ConfigurationBuilder, ConfigurationFactory
 from configurables.parse import (
     CFG,
+    CLI,
+    ENV,
     PARSING_REGISTRY,
     ResolutionDefinition,
     autoparse_config,
@@ -48,7 +50,7 @@ def configure(
     return target(**config)
 
 
-def param(name: str, type=str) -> typing.Callable:
+def param(name: str, type: typing.Callable = str) -> typing.Callable:
     """
     A decorator to add a required parameter to a ConfigurationBuilder. This
     functionality allows type casting to occur.
@@ -72,7 +74,9 @@ def param(name: str, type=str) -> typing.Callable:
     ('someusername', '**********')
     """
 
-    def _internal(obj):
+    def _internal(
+        obj: typing.Union[ConfigurationBuilder, typing.Callable]
+    ) -> ConfigurationBuilder:
         if isinstance(obj, ConfigurationBuilder):
             config_builder = obj
         else:
@@ -86,7 +90,9 @@ def param(name: str, type=str) -> typing.Callable:
     return _internal
 
 
-def option(name: str, type=str, default: typing.Any = None) -> typing.Callable:
+def option(
+    name: str, type: typing.Callable = str, default: typing.Any = None
+) -> typing.Callable:
     """
     A decorator to add an optional parameter to a ConfigurationBuilder. This
     functionality allows type casting to occur as well as providing a default
@@ -116,7 +122,9 @@ def option(name: str, type=str, default: typing.Any = None) -> typing.Callable:
     ('willfong', '***********')
     """
 
-    def _internal(obj):
+    def _internal(
+        obj: typing.Union[ConfigurationBuilder, typing.Callable]
+    ) -> ConfigurationBuilder:
         if isinstance(obj, ConfigurationBuilder):
             config_builder = obj
         else:
@@ -145,15 +153,21 @@ def configurable(
         runtime.
     """
 
-    def _internal(config_builder):
+    def _internal(
+        config_builder: ConfigurationBuilder
+    ) -> ConfigurationFactory:
         if not isinstance(config_builder, ConfigurationBuilder):
             raise ValueError(
                 "Wrapped function has not "
                 "defined any parameters or options! "
                 f"Instead got {config_builder}"
             )
+        # Default order is CLI > CFG > ENV
+        default_order = CLI > CFG > ENV
         factory = ConfigurationFactory(
-            config_builder, config_section, CFG if order is None else order
+            config_builder,
+            config_section or "DEFAULT",
+            default_order if order is None else order
         )
         return factory
 

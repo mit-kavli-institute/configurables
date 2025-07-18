@@ -57,7 +57,7 @@ class ResolutionDefinition:
     def __init__(self, first_element: "RHS"):
         self.interpreter_order = [first_element]
 
-    def __lt__(self, rhs: "RHS"):
+    def __lt__(self, rhs: "RHS") -> "ResolutionDefinition":
         if rhs in self.interpreter_order:
             raise InvalidOrdering()
 
@@ -85,16 +85,16 @@ def autoparse_config(
     path: pathlib.Path, section: typing.Optional[str] = None
 ) -> dict:
     path = pathlib.Path(path).expanduser()
-    global PARSING_REGISTRY
     func = PARSING_REGISTRY.get(path.suffix, PARSING_REGISTRY[".ini"])
     if section is None:
         return func(path)
     return func(path, section)
 
 
-def register(*extensions: str) -> typing.Callable:
-    def decoration(func):
-        global PARSING_REGISTRY
+def register(
+    *extensions: str
+) -> typing.Callable[[typing.Callable], typing.Callable]:
+    def decoration(func: typing.Callable) -> typing.Callable:
         for extension in extensions:
             PARSING_REGISTRY[extension] = func
         return func
@@ -149,17 +149,17 @@ class Interpreter:
             lhs = ResolutionDefinition(self)
         return op(lhs, rhs)
 
-    def __lt__(self, rhs: RHS):
+    def __lt__(self, rhs: RHS) -> ResolutionDefinition:
         return self._coalese(rhs, operator.lt)
 
-    def __gt__(self, rhs: RHS):
+    def __gt__(self, rhs: RHS) -> ResolutionDefinition:
         return self._coalese(rhs, operator.gt)
 
-    def __str__(self):
-        return self.name
+    def __str__(self) -> str:
+        return self.name or "Unknown"
 
-    def __repr__(self):
-        return self.name
+    def __repr__(self) -> str:
+        return self.name or "Unknown"
 
 
 class Env(Interpreter):
