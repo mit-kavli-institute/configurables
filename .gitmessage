@@ -1,0 +1,39 @@
+# <type>(<scope>): <subject>
+#
+# <body>
+#
+# <footer>
+
+# Type should be one of the following:
+# - feat: A new feature (triggers minor version bump)
+# - fix: A bug fix (triggers patch version bump)
+# - docs: Documentation changes
+# - style: Code style changes (formatting, semicolons, etc)
+# - refactor: Code refactoring without adding features or fixes
+# - perf: Performance improvements
+# - test: Adding or modifying tests
+# - build: Changes to build system or dependencies
+# - ci: Changes to CI configuration files and scripts
+# - chore: Other changes that don't modify src or test files
+
+# Scope is optional and can be anything specifying the place of the commit change.
+# For example: core, parse, configurable, emission, etc.
+
+# Subject should use imperative mood: "change" not "changed" nor "changes"
+# Don't capitalize first letter
+# No period at the end
+
+# Body should include motivation for the change and contrast with previous behavior
+
+# Footer should contain any information about Breaking Changes and is also 
+# the place to reference GitHub issues that this commit closes
+# Breaking Changes should start with "BREAKING CHANGE:" (triggers major version)
+
+# Example:
+# feat(parse): add support for yaml configuration files
+#
+# Add YAML parser to the parsing registry to support .yml and .yaml files.
+# This allows users to use YAML format for their configuration files
+# in addition to the existing INI format support.
+#
+# Closes #123

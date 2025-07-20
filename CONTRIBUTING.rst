@@ -85,13 +85,63 @@ Ready to contribute? Here's how to set up `configurables` for local development.
 
    To get flake8 and tox, just pip install them into your virtualenv.
 
-6. Commit your changes and push your branch to GitHub::
+6. Commit your changes using conventional commits and push your branch to GitHub::
 
     $ git add .
-    $ git commit -m "Your detailed description of your changes."
+    $ git commit  # This will open your editor with the commit template
     $ git push origin name-of-your-bugfix-or-feature
 
+   See the "Commit Message Guidelines" section below for proper commit formatting.
+
 7. Submit a pull request through the GitHub website.
+
+Commit Message Guidelines
+-------------------------
+
+This project uses `Conventional Commits <https://www.conventionalcommits.org/>`_ for automatic versioning and changelog generation. Please follow these guidelines:
+
+**Format**::
+
+    <type>(<scope>): <subject>
+    
+    <body>
+    
+    <footer>
+
+**Types**:
+
+* ``feat``: A new feature (triggers minor version bump)
+* ``fix``: A bug fix (triggers patch version bump)
+* ``docs``: Documentation only changes
+* ``style``: Changes that don't affect code meaning (formatting, missing semi-colons, etc)
+* ``refactor``: Code change that neither fixes a bug nor adds a feature
+* ``perf``: Code change that improves performance
+* ``test``: Adding missing tests or correcting existing tests
+* ``build``: Changes that affect the build system or external dependencies
+* ``ci``: Changes to CI configuration files and scripts
+* ``chore``: Other changes that don't modify src or test files
+
+**Scope** (optional): Anything specifying the place of the commit change (e.g., ``core``, ``parse``, ``configurable``)
+
+**Subject**: Use imperative mood ("add" not "added"), don't capitalize first letter, no period at the end
+
+**Breaking Changes**: Add ``BREAKING CHANGE:`` in the footer (triggers major version bump)
+
+**Examples**::
+
+    feat(parse): add support for yaml configuration files
+    
+    fix: handle missing configuration file gracefully
+    
+    docs: update installation instructions
+    
+    feat(api)!: change parameter order in configurable decorator
+    
+    BREAKING CHANGE: The order of parameters in @configurable has changed
+
+To use the commit template locally::
+
+    $ git config --local commit.template .gitmessage
 
 Pull Request Guidelines
 -----------------------
@@ -102,9 +152,10 @@ Before you submit a pull request, check that it meets these guidelines:
 2. If the pull request adds functionality, the docs should be updated. Put
    your new functionality into a function with a docstring, and add the
    feature to the list in README.rst.
-3. The pull request should work for Python 3.5, 3.6, 3.7 and 3.8, and for PyPy. Check
-   https://travis-ci.com/WilliamCFong/configurables/pull_requests
-   and make sure that the tests pass for all supported Python versions.
+3. The pull request should work for Python 3.9, 3.10, 3.11, 3.12, and 3.13. Check
+   the GitHub Actions results and make sure that the tests pass for all 
+   supported Python versions.
+4. Follow the commit message guidelines above for all commits in your PR.
 
 Tips
 ----
@@ -117,12 +168,20 @@ $ pytest tests.test_configurables
 Deploying
 ---------
 
-A reminder for the maintainers on how to deploy.
-Make sure all your changes are committed (including an entry in HISTORY.rst).
-Then run::
+A reminder for the maintainers on how to deploy:
 
-$ bump2version patch # possible: major / minor / patch
-$ git push
-$ git push --tags
+Deployment is now automated! When you merge a PR to the master branch:
 
-Travis will then deploy to PyPI if tests pass.
+1. The GitHub Actions workflow analyzes commit messages
+2. Automatically determines the version bump (major/minor/patch)
+3. Updates version files and creates a CHANGELOG.md
+4. Creates a git tag and GitHub release
+5. Optionally publishes to PyPI (if enabled)
+
+To trigger a release manually, ensure your commits follow the conventional commit format:
+
+* ``fix:`` commits trigger a patch release (1.0.0 → 1.0.1)
+* ``feat:`` commits trigger a minor release (1.0.0 → 1.1.0)
+* ``BREAKING CHANGE:`` triggers a major release (1.0.0 → 2.0.0)
+
+The old manual process is no longer needed!

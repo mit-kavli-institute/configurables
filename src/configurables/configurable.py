@@ -7,6 +7,8 @@ import typing
 from configurables.core import ConfigurationBuilder, ConfigurationFactory
 from configurables.parse import (
     CFG,
+    CLI,
+    ENV,
     PARSING_REGISTRY,
     ResolutionDefinition,
     autoparse_config,
@@ -20,22 +22,35 @@ def configure(
     extension_override: typing.Optional[str] = None,
 ) -> typing.Callable:
     """
-    A quick wrapper for configuring callables. This interface provides no
-    type checking, default parameters, or os envrionment/command overrides.
-    Everything in the configuration file is passed as is.
+    A quick wrapper for configuring callables.
+    
+    This interface provides no type checking, default parameters, or os 
+    environment/command overrides. Everything in the configuration file is 
+    passed as is.
 
     Parameters
     ----------
-    target: callable
+    target : callable
         A callable to pass keyword arguments to.
-    config_path: pathlike
-        A path to a configuration file
-    config_group: str
+    config_path : str or PathLike
+        A path to a configuration file.
+    config_group : str, optional
         The path to resolving to a desired group within the
         configuration object.
-    extension_override: str, optional
+    extension_override : str, optional
         Parsing of configuration options happens by file extension. This
         allows a developer to override this behavior.
+        
+    Returns
+    -------
+    Any
+        The result of calling target with the configuration as keyword arguments.
+        
+    Examples
+    --------
+    >>> def process(name, value):
+    ...     return f"{name}: {value}"
+    >>> result = configure(process, "config.ini", "Settings")
     """
     path = pathlib.Path(config_path)
 
@@ -48,31 +63,39 @@ def configure(
     return target(**config)
 
 
-def param(name: str, type=str) -> typing.Callable:
+def param(name: str, type: typing.Callable = str) -> typing.Callable:
     """
-    A decorator to add a required parameter to a ConfigurationBuilder. This
-    functionality allows type casting to occur.
+    A decorator to add a required parameter to a ConfigurationBuilder.
+    
+    This functionality allows type casting to occur.
 
     Parameters
     ----------
-    name: str
+    name : str
         The name (key) of the parameter.
-    type: callable, optional
+    type : callable, optional
         The type to cast the parameter to. The default is str.
+        
+    Returns
+    -------
+    callable
+        A decorator function that adds the parameter to the configuration.
 
     Examples
     --------
     >>> @configurable("Credentials")
-    >>> @param("username", type=str)
-    >>> @param("password", type=str)
-    >>> def login(username, password):
-    >>>     print(username, "*" * len(password))
-    >>>
+    ... @param("username", type=str)
+    ... @param("password", type=str)
+    ... def login(username, password):
+    ...     print(username, "*" * len(password))
+    ...
     >>> login("credentials.ini")
-    ('someusername', '**********')
+    someusername **********
     """
 
-    def _internal(obj):
+    def _internal(
+        obj: typing.Union[ConfigurationBuilder, typing.Callable]
+    ) -> ConfigurationBuilder:
         if isinstance(obj, ConfigurationBuilder):
             config_builder = obj
         else:
@@ -86,37 +109,47 @@ def param(name: str, type=str) -> typing.Callable:
     return _internal
 
 
-def option(name: str, type=str, default: typing.Any = None) -> typing.Callable:
+def option(
+    name: str, type: typing.Callable = str, default: typing.Any = None
+) -> typing.Callable:
     """
-    A decorator to add an optional parameter to a ConfigurationBuilder. This
-    functionality allows type casting to occur as well as providing a default
+    A decorator to add an optional parameter to a ConfigurationBuilder.
+    
+    This functionality allows type casting to occur as well as providing a default
     value. This default value is *not* type checked.
 
     Parameters
     ----------
-    name: str
+    name : str
         The name (key) of the option.
-    type: callable, optional
+    type : callable, optional
         The type to cast the option. This cast will *not* be applied to
-        provided defaults.
-    default: any, optional
+        provided defaults. Default is str.
+    default : Any, optional
         The default value to provide if it is not found within the config
-        file, os environments, or overrides. By default, this default is
-        None.
+        file, os environments, or overrides. Default is None.
+        
+    Returns
+    -------
+    callable
+        A decorator function that adds the option to the configuration.
 
     Examples
     --------
+    >>> import os
     >>> @configurable("Credentials")
-    >>> @option("username", type=str, default=os.getlogin())
-    >>> @param("password", type=str)
-    >>> def login(username, password):
-    >>>     print(username, "*" * len(password))
-    >>>
+    ... @option("username", type=str, default=os.getlogin())
+    ... @param("password", type=str)
+    ... def login(username, password):
+    ...     print(username, "*" * len(password))
+    ...
     >>> login("credentials.ini")
-    ('willfong', '***********')
+    willfong ***********
     """
 
-    def _internal(obj):
+    def _internal(
+        obj: typing.Union[ConfigurationBuilder, typing.Callable]
+    ) -> ConfigurationBuilder:
         if isinstance(obj, ConfigurationBuilder):
             config_builder = obj
         else:
@@ -139,21 +172,53 @@ def configurable(
 
     Parameters
     ----------
-    config_section: str, optional
+    config_section : str, optional
         The configuration section to resolve parameters from. If left
         blank, it will be up to the callee to provide a section during
         runtime.
+    order : ResolutionDefinition, optional
+        Custom resolution order for configuration sources. If not provided,
+        the default order is CLI > CFG > ENV.
+        
+    Returns
+    -------
+    callable
+        A decorator function that returns a ConfigurationFactory.
+        
+    Raises
+    ------
+    ValueError
+        If the wrapped function has not defined any parameters or options.
+        
+    Examples
+    --------
+    >>> @configurable("Settings")
+    ... @param("value", type=int)
+    ... def process(value):
+    ...     return value * 2
+    ...
+    >>> # Can customize resolution order
+    >>> @configurable("Settings", order=ENV > CFG > CLI)
+    ... @param("value", type=int)
+    ... def process_env_first(value):
+    ...     return value
     """
 
-    def _internal(config_builder):
+    def _internal(
+        config_builder: ConfigurationBuilder
+    ) -> ConfigurationFactory:
         if not isinstance(config_builder, ConfigurationBuilder):
             raise ValueError(
                 "Wrapped function has not "
                 "defined any parameters or options! "
                 f"Instead got {config_builder}"
             )
+        # Default order is CLI > CFG > ENV
+        default_order = CLI > CFG > ENV
         factory = ConfigurationFactory(
-            config_builder, config_section, CFG if order is None else order
+            config_builder,
+            config_section or "DEFAULT",
+            default_order if order is None else order
         )
         return factory
 
