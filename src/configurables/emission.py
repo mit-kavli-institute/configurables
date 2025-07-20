@@ -83,7 +83,14 @@ def autoemit_config(
     >>> autoemit_config(Path("db.ini"), config, "Database")
     PosixPath('/home/user/db.ini')
     """
-    func = EMISSION_REGISTRY[path.suffix]
+    try:
+        func = EMISSION_REGISTRY[path.suffix]
+    except KeyError:
+        supported_extensions = ", ".join(EMISSION_REGISTRY.keys())
+        raise KeyError(
+            f"Unsupported file extension '{path.suffix}'. "
+            f"Supported extensions are: {supported_extensions}"
+        )
     if section is None:
         section = "DEFAULT"
     return func(path, section, configuration)
