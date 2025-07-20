@@ -62,9 +62,12 @@ exclude = "docs"
 
 [tool.semantic_release]
 branch = "master"
-version_variable = "src/configurables/_version.py:__version__"
-version_toml = ["pyproject.toml:project.version"]
-version_pattern = "docs/conf.py:version = '{version}'"
+version_variable = [
+    "src/configurables/_version.py:__version__"
+]
+version_toml = [
+    "pyproject.toml:project.version"
+]
 upload_to_pypi = false
 upload_to_release = true
 build_command = "python -m build"

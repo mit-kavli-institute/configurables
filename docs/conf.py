@@ -24,8 +24,12 @@ from typing import List
 # Add the project root to the Python path
 sys.path.insert(0, os.path.abspath("../src"))
 
-# Import version from the package
-from configurables import __version__
+# Read version from _version.py file to avoid import issues
+version_file = os.path.join(os.path.dirname(__file__), "../src/configurables/_version.py")
+with open(version_file) as f:
+    for line in f:
+        if line.startswith("__version__"):
+            __version__ = line.split("=")[1].strip().strip('"')
 
 
 # -- General configuration ---------------------------------------------
