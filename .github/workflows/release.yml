@@ -40,7 +40,7 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        semantic-release publish --verbosity=DEBUG
+        semantic-release publish -vv
 
     - name: Upload to PyPI (if enabled)
       if: steps.release.outputs.released == 'true' && false

@@ -1,12 +1,28 @@
 from __future__ import annotations
 
+import functools
 import pathlib
 import typing
 from dataclasses import dataclass
 from functools import partial
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+    overload,
+)
 
 from configurables.emission import autoemit_config
 from configurables.parse import ResolutionDefinition
+
+# Type variables for generic support
+T = TypeVar("T")  # Return type of the wrapped function
+# When Python 3.10+ ParamSpec is available, we can use it for better parameter typing
 
 
 @dataclass
@@ -33,7 +49,7 @@ class Parameter:
     8080
     """
     name: str
-    type: typing.Callable
+    type: Callable
 
 
 @dataclass
@@ -63,12 +79,12 @@ class Option:
     30
     """
     name: str
-    type: typing.Callable
-    default: typing.Any
+    type: Callable
+    default: Any
 
 
 @dataclass
-class ConfigurationBuilder:
+class ConfigurationBuilder(Generic[T]):
     """
     Builds configuration schema for a function.
     
@@ -84,11 +100,11 @@ class ConfigurationBuilder:
     function : callable
         The function that will be configured.
     """
-    parameters: dict
-    options: dict
-    function: typing.Callable
+    parameters: Dict[str, Parameter]
+    options: Dict[str, Option]
+    function: Callable[..., T]
 
-    def add_parameter(self, name: str, type: typing.Callable) -> Parameter:
+    def add_parameter(self, name: str, type: Callable) -> Parameter:
         """
         Add a required parameter to the configuration schema.
         
@@ -112,8 +128,8 @@ class ConfigurationBuilder:
     def add_option(
         self,
         name: str,
-        type: typing.Callable,
-        default: typing.Optional[typing.Any] = None,
+        type: Callable,
+        default: Optional[Any] = None,
     ) -> Option:
         """
         Add an optional parameter to the configuration schema.
@@ -138,7 +154,7 @@ class ConfigurationBuilder:
         return option
 
 
-class ConfigurationFactory:
+class ConfigurationFactory(Generic[T]):
     """
     Factory for creating configured function instances.
     
@@ -168,7 +184,7 @@ class ConfigurationFactory:
 
     def __init__(
         self,
-        config_builder: ConfigurationBuilder,
+        config_builder: ConfigurationBuilder[T],
         section: str,
         configuration_order: ResolutionDefinition,
     ):
@@ -192,7 +208,7 @@ class ConfigurationFactory:
         function = self.builder.function
         return repr(function)
 
-    def _resolve_param(self, key: str, raw_values: dict) -> typing.Any:
+    def _resolve_param(self, key: str, raw_values: dict) -> Any:
         """
         Resolve a parameter value with type conversion.
         
@@ -217,7 +233,7 @@ class ConfigurationFactory:
         value = raw_values[key]
         return _type(value)
 
-    def _resolve_option(self, key: str, raw_values: dict) -> typing.Any:
+    def _resolve_option(self, key: str, raw_values: dict) -> Any:
         """
         Resolve an option value with type conversion or default.
         
@@ -241,12 +257,32 @@ class ConfigurationFactory:
 
         return _type(raw_value)
 
+    @overload
     def __call__(
         self,
-        _filepath: typing.Optional[pathlib.Path] = None,
-        _section: typing.Optional[str] = None,
-        **overrides: typing.Any,
-    ) -> typing.Any:
+        _filepath: Union[str, pathlib.Path],
+        _section: Optional[str] = None,
+        **overrides: Any,
+    ) -> T:
+        """Call with configuration file."""
+        ...
+
+    @overload
+    def __call__(
+        self,
+        _filepath: None = None,
+        _section: None = None,
+        **kwargs: Any,
+    ) -> T:
+        """Call with all parameters directly."""
+        ...
+
+    def __call__(
+        self,
+        _filepath: Optional[Union[str, pathlib.Path]] = None,
+        _section: Optional[str] = None,
+        **overrides: Any,
+    ) -> T:
         """
         Call the wrapped function with configuration.
         
@@ -255,7 +291,7 @@ class ConfigurationFactory:
 
         Parameters
         ----------
-        _filepath : pathlib.Path, optional
+        _filepath : Optional[Union[str, pathlib.Path]]
             The filepath to the configuration file to use.
         _section : str, optional
             Override the configuration section to use. If left blank then
@@ -266,8 +302,8 @@ class ConfigurationFactory:
             
         Returns
         -------
-        Any
-            Result of calling the wrapped function with resolved configuration.
+        T
+            The return value of the wrapped function.
             
         Examples
         --------
@@ -276,16 +312,18 @@ class ConfigurationFactory:
         >>> # Override section and values
         >>> result = configured_func("config.ini", _section="Dev", timeout=60)
         """
+        if _filepath is not None:
+            _filepath = pathlib.Path(_filepath)
         kwargs = self.parse(_section, _filepath=_filepath, **overrides)
         return self.builder.function(**kwargs)
 
     def parse(
         self,
-        section,
-        _filepath: typing.Optional[pathlib.Path] = None,
+        section: Optional[str],
+        _filepath: Optional[pathlib.Path] = None,
         _ignore_options: bool = False,
-        **overrides: typing.Any,
-    ) -> dict[str, typing.Any]:
+        **overrides: Any,
+    ) -> Dict[str, Any]:
         """
         Parse configuration from all sources.
         
@@ -313,7 +351,7 @@ class ConfigurationFactory:
             Dictionary of resolved configuration values ready to pass to the
             wrapped function.
         """
-        context = {}  # type: typing.Dict[str, typing.Any]
+        context: Dict[str, Any] = {}
         if _filepath is not None:
             context["config_path"] = _filepath
         if section is None:
@@ -336,10 +374,10 @@ class ConfigurationFactory:
     def emit(
         self,
         output_path: pathlib.Path,
-        _section: typing.Optional[str] = None,
-        _filepath: typing.Optional[pathlib.Path] = None,
+        _section: Optional[str] = None,
+        _filepath: Optional[pathlib.Path] = None,
         _ignore_options: bool = True,
-        **overrides: typing.Any,
+        **overrides: Any,
     ) -> pathlib.Path:
         """
         Generate a configuration file template.
@@ -380,10 +418,10 @@ class ConfigurationFactory:
 
     def partial(
         self,
-        _filepath: typing.Optional[pathlib.Path] = None,
-        _section: typing.Optional[str] = None,
-        **overrides: typing.Any,
-    ) -> typing.Callable:
+        _filepath: Optional[pathlib.Path] = None,
+        _section: Optional[str] = None,
+        **overrides: Any,
+    ) -> Callable[..., T]:
         """
         Generate a partial function using the passed configurations.
         
@@ -398,7 +436,7 @@ class ConfigurationFactory:
             
         Returns
         -------
-        callable
+        Callable[..., T]
             Partial function with configuration values pre-applied.
             
         Examples
@@ -411,3 +449,26 @@ class ConfigurationFactory:
         """
         kwargs = self.parse(_section, _filepath=_filepath, **overrides)
         return partial(self.builder.function, **kwargs)
+
+
+def create_typed_wrapper(factory: ConfigurationFactory[T]) -> ConfigurationFactory[T]:
+    """
+    Create a typed wrapper for a ConfigurationFactory that preserves type information.
+    
+    This function enhances the factory with better type hints for IDE support,
+    showing that configuration file inputs are valid alternatives to direct parameters.
+    
+    Parameters
+    ----------
+    factory : ConfigurationFactory[T]
+        The configuration factory to wrap.
+        
+    Returns
+    -------
+    ConfigurationFactory[T]
+        The same factory with enhanced type information.
+    """
+    # For now, we return the factory as-is since the type information
+    # is already preserved through generics. In the future, we could
+    # create a more sophisticated wrapper that generates dynamic signatures.
+    return factory
