@@ -3,8 +3,13 @@ from __future__ import annotations
 import os
 import pathlib
 import typing
+from typing import Any, Callable, Optional, TypeVar, Union
 
-from configurables.core import ConfigurationBuilder, ConfigurationFactory
+from configurables.core import (
+    ConfigurationBuilder,
+    ConfigurationFactory,
+    create_typed_wrapper,
+)
 from configurables.parse import (
     CFG,
     CLI,
@@ -13,6 +18,9 @@ from configurables.parse import (
     ResolutionDefinition,
     autoparse_config,
 )
+
+# Type variable for preserving function return types
+T = TypeVar("T")
 
 
 def configure(
@@ -50,7 +58,7 @@ def configure(
     return target(**config)
 
 
-def param(name: str, type: typing.Callable = str) -> typing.Callable:
+def param(name: str, type: Callable = str) -> Callable[[Union[ConfigurationBuilder[T], Callable[..., T]]], ConfigurationBuilder[T]]:
     """
     A decorator to add a required parameter to a ConfigurationBuilder. This
     functionality allows type casting to occur.
@@ -75,13 +83,13 @@ def param(name: str, type: typing.Callable = str) -> typing.Callable:
     """
 
     def _internal(
-        obj: typing.Union[ConfigurationBuilder, typing.Callable]
-    ) -> ConfigurationBuilder:
+        obj: Union[ConfigurationBuilder[T], Callable[..., T]]
+    ) -> ConfigurationBuilder[T]:
         if isinstance(obj, ConfigurationBuilder):
             config_builder = obj
         else:
             # Assume that we're decorating the target callable
-            config_builder = ConfigurationBuilder(
+            config_builder = ConfigurationBuilder[T](
                 parameters={}, options={}, function=obj
             )
         config_builder.add_parameter(name=name, type=type)
@@ -91,8 +99,8 @@ def param(name: str, type: typing.Callable = str) -> typing.Callable:
 
 
 def option(
-    name: str, type: typing.Callable = str, default: typing.Any = None
-) -> typing.Callable:
+    name: str, type: Callable = str, default: Any = None
+) -> Callable[[Union[ConfigurationBuilder[T], Callable[..., T]]], ConfigurationBuilder[T]]:
     """
     A decorator to add an optional parameter to a ConfigurationBuilder. This
     functionality allows type casting to occur as well as providing a default
@@ -123,13 +131,13 @@ def option(
     """
 
     def _internal(
-        obj: typing.Union[ConfigurationBuilder, typing.Callable]
-    ) -> ConfigurationBuilder:
+        obj: Union[ConfigurationBuilder[T], Callable[..., T]]
+    ) -> ConfigurationBuilder[T]:
         if isinstance(obj, ConfigurationBuilder):
             config_builder = obj
         else:
             # Assume that we're decorating the target callable
-            config_builder = ConfigurationBuilder(
+            config_builder = ConfigurationBuilder[T](
                 parameters={}, options={}, function=obj
             )
         config_builder.add_option(name=name, type=type, default=default)
@@ -139,9 +147,9 @@ def option(
 
 
 def configurable(
-    config_section: typing.Optional[str] = None,
-    order: typing.Optional[ResolutionDefinition] = None,
-) -> typing.Callable:
+    config_section: Optional[str] = None,
+    order: Optional[ResolutionDefinition] = None,
+) -> Callable[[ConfigurationBuilder[T]], ConfigurationFactory[T]]:
     """
     The top-level decorator to fully bind a callable.
 
@@ -154,8 +162,8 @@ def configurable(
     """
 
     def _internal(
-        config_builder: ConfigurationBuilder
-    ) -> ConfigurationFactory:
+        config_builder: ConfigurationBuilder[T]
+    ) -> ConfigurationFactory[T]:
         if not isinstance(config_builder, ConfigurationBuilder):
             raise ValueError(
                 "Wrapped function has not "
@@ -164,11 +172,12 @@ def configurable(
             )
         # Default order is CLI > CFG > ENV
         default_order = CLI > CFG > ENV
-        factory = ConfigurationFactory(
+        factory = ConfigurationFactory[T](
             config_builder,
             config_section or "DEFAULT",
             default_order if order is None else order
         )
-        return factory
+        # Return the factory with enhanced typing
+        return create_typed_wrapper(factory)
 
     return _internal

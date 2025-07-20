@@ -1,34 +1,110 @@
 from __future__ import annotations
 
+import functools
 import pathlib
 import typing
 from dataclasses import dataclass
 from functools import partial
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+    overload,
+)
 
 from configurables.emission import autoemit_config
 from configurables.parse import ResolutionDefinition
 
+# Type variables for generic support
+T = TypeVar("T")  # Return type of the wrapped function
+# When Python 3.10+ ParamSpec is available, we can use it for better parameter typing
+
 
 @dataclass
 class Parameter:
+    """
+    Represents a required configuration parameter.
+    
+    A parameter must be provided in the configuration source (file, environment
+    variable, or command line) or as an override when calling the configured
+    function.
+    
+    Attributes
+    ----------
+    name : str
+        The name of the parameter as it appears in configuration sources.
+    type : callable
+        A callable that converts the string value from configuration to the
+        desired type (e.g., int, float, pathlib.Path).
+        
+    Examples
+    --------
+    >>> param = Parameter(name="port", type=int)
+    >>> param.type("8080")  # Converts string to int
+    8080
+    """
     name: str
-    type: typing.Callable
+    type: Callable
 
 
 @dataclass
 class Option:
+    """
+    Represents an optional configuration parameter with a default value.
+    
+    An option can be provided in configuration sources but will fall back to
+    its default value if not found.
+    
+    Attributes
+    ----------
+    name : str
+        The name of the option as it appears in configuration sources.
+    type : callable
+        A callable that converts the string value from configuration to the
+        desired type.
+    default : Any
+        The default value to use if the option is not found in any
+        configuration source.
+        
+    Examples
+    --------
+    >>> option = Option(name="timeout", type=int, default=30)
+    >>> # If not in config, returns default
+    >>> option.default
+    30
+    """
     name: str
-    type: typing.Callable
-    default: typing.Any
+    type: Callable
+    default: Any
 
 
 @dataclass
-class ConfigurationBuilder:
-    parameters: dict
-    options: dict
-    function: typing.Callable
+class ConfigurationBuilder(Generic[T]):
+    """
+    Builds configuration schema for a function.
+    
+    This class accumulates parameter and option definitions as decorators are
+    applied to a function, building up a complete configuration schema.
+    
+    Attributes
+    ----------
+    parameters : dict
+        Dictionary mapping parameter names to Parameter objects.
+    options : dict
+        Dictionary mapping option names to Option objects.
+    function : callable
+        The function that will be configured.
+    """
+    parameters: Dict[str, Parameter]
+    options: Dict[str, Option]
+    function: Callable[..., T]
 
-    def add_parameter(self, name: str, type: typing.Callable) -> Parameter:
+    def add_parameter(self, name: str, type: Callable) -> Parameter:
         parameter = Parameter(name=name, type=type)
         self.parameters[name] = parameter
 
@@ -37,8 +113,8 @@ class ConfigurationBuilder:
     def add_option(
         self,
         name: str,
-        type: typing.Callable,
-        default: typing.Optional[typing.Any] = None,
+        type: Callable,
+        default: Optional[Any] = None,
     ) -> Option:
         option = Option(name=name, type=type, default=default)
         self.options[name] = option
@@ -46,7 +122,7 @@ class ConfigurationBuilder:
         return option
 
 
-class ConfigurationFactory:
+class ConfigurationFactory(Generic[T]):
     """
     This class maintains the schema context when defining parameters and
     options. Using the maintained definition we are able to call the wrapped
@@ -55,7 +131,7 @@ class ConfigurationFactory:
 
     def __init__(
         self,
-        config_builder: ConfigurationBuilder,
+        config_builder: ConfigurationBuilder[T],
         section: str,
         configuration_order: ResolutionDefinition,
     ):
@@ -67,12 +143,12 @@ class ConfigurationFactory:
         function = self.builder.function
         return repr(function)
 
-    def _resolve_param(self, key: str, raw_values: dict) -> typing.Any:
+    def _resolve_param(self, key: str, raw_values: dict) -> Any:
         _type = self.builder.parameters[key].type
         value = raw_values[key]
         return _type(value)
 
-    def _resolve_option(self, key: str, raw_values: dict) -> typing.Any:
+    def _resolve_option(self, key: str, raw_values: dict) -> Any:
         _type = self.builder.options[key].type
         try:
             raw_value = raw_values[key]
@@ -81,19 +157,39 @@ class ConfigurationFactory:
 
         return _type(raw_value)
 
+    @overload
     def __call__(
         self,
-        _filepath: typing.Optional[pathlib.Path] = None,
-        _section: typing.Optional[str] = None,
-        **overrides: typing.Any,
-    ) -> typing.Any:
+        _filepath: Union[str, pathlib.Path],
+        _section: Optional[str] = None,
+        **overrides: Any,
+    ) -> T:
+        """Call with configuration file."""
+        ...
+
+    @overload
+    def __call__(
+        self,
+        _filepath: None = None,
+        _section: None = None,
+        **kwargs: Any,
+    ) -> T:
+        """Call with all parameters directly."""
+        ...
+
+    def __call__(
+        self,
+        _filepath: Optional[Union[str, pathlib.Path]] = None,
+        _section: Optional[str] = None,
+        **overrides: Any,
+    ) -> T:
         """
         Override __call__ protocol to allow transparent evocation of wrapped
         function.
 
         Parameters
         ----------
-        _filepath: Optional[pathlib.Path]
+        _filepath: Optional[Union[str, pathlib.Path]]
             The filepath to the configuration file to use.
         _section: Optional[str]
             Override the configuration section to use. If left blank then
@@ -101,17 +197,24 @@ class ConfigurationFactory:
         **overrides: Any
             Keyword overrides which will be used. Any keys provided here will
             override any configuration.
+            
+        Returns
+        -------
+        T
+            The return value of the wrapped function.
         """
+        if _filepath is not None:
+            _filepath = pathlib.Path(_filepath)
         kwargs = self.parse(_section, _filepath=_filepath, **overrides)
         return self.builder.function(**kwargs)
 
     def parse(
         self,
-        section,
-        _filepath: typing.Optional[pathlib.Path] = None,
+        section: Optional[str],
+        _filepath: Optional[pathlib.Path] = None,
         _ignore_options: bool = False,
-        **overrides: typing.Any,
-    ) -> dict[str, typing.Any]:
+        **overrides: Any,
+    ) -> Dict[str, Any]:
         """
         Given the schema configuration, parse any provided overrides, and load
         configurations from the relevant configuration file, environment
@@ -134,7 +237,7 @@ class ConfigurationFactory:
         -------
         dict[str, Any]
         """
-        context = {}  # type: typing.Dict[str, typing.Any]
+        context: Dict[str, Any] = {}
         if _filepath is not None:
             context["config_path"] = _filepath
         if section is None:
@@ -157,10 +260,10 @@ class ConfigurationFactory:
     def emit(
         self,
         output_path: pathlib.Path,
-        _section: typing.Optional[str] = None,
-        _filepath: typing.Optional[pathlib.Path] = None,
+        _section: Optional[str] = None,
+        _filepath: Optional[pathlib.Path] = None,
         _ignore_options: bool = True,
-        **overrides: typing.Any,
+        **overrides: Any,
     ) -> pathlib.Path:
         kwargs = self.parse(
             _section,
@@ -173,12 +276,57 @@ class ConfigurationFactory:
 
     def partial(
         self,
-        _filepath: typing.Optional[pathlib.Path] = None,
-        _section: typing.Optional[str] = None,
-        **overrides: typing.Any,
-    ) -> typing.Callable:
+        _filepath: Optional[pathlib.Path] = None,
+        _section: Optional[str] = None,
+        **overrides: Any,
+    ) -> Callable[..., T]:
         """
         Generate a partial function using the passed configurations.
+        
+        Parameters
+        ----------
+        _filepath : pathlib.Path, optional
+            Configuration file to load values from.
+        _section : str, optional
+            Configuration section to use.
+        **overrides : Any
+            Additional configuration overrides.
+            
+        Returns
+        -------
+        Callable[..., T]
+            Partial function with configuration values pre-applied.
+            
+        Examples
+        --------
+        >>> # Create partial with config
+        >>> partial_func = configured_func.partial("config.ini")
+        >>> # Call multiple times with same config
+        >>> result1 = partial_func()
+        >>> result2 = partial_func()
         """
         kwargs = self.parse(_section, _filepath=_filepath, **overrides)
         return partial(self.builder.function, **kwargs)
+
+
+def create_typed_wrapper(factory: ConfigurationFactory[T]) -> ConfigurationFactory[T]:
+    """
+    Create a typed wrapper for a ConfigurationFactory that preserves type information.
+    
+    This function enhances the factory with better type hints for IDE support,
+    showing that configuration file inputs are valid alternatives to direct parameters.
+    
+    Parameters
+    ----------
+    factory : ConfigurationFactory[T]
+        The configuration factory to wrap.
+        
+    Returns
+    -------
+    ConfigurationFactory[T]
+        The same factory with enhanced type information.
+    """
+    # For now, we return the factory as-is since the type information
+    # is already preserved through generics. In the future, we could
+    # create a more sophisticated wrapper that generates dynamic signatures.
+    return factory
