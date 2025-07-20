@@ -105,6 +105,21 @@ class ConfigurationBuilder(Generic[T]):
     function: Callable[..., T]
 
     def add_parameter(self, name: str, type: Callable) -> Parameter:
+        """
+        Add a required parameter to the configuration schema.
+        
+        Parameters
+        ----------
+        name : str
+            The name of the parameter.
+        type : callable
+            Type conversion function for the parameter.
+            
+        Returns
+        -------
+        Parameter
+            The created Parameter object.
+        """
         parameter = Parameter(name=name, type=type)
         self.parameters[name] = parameter
 
@@ -116,6 +131,23 @@ class ConfigurationBuilder(Generic[T]):
         type: Callable,
         default: Optional[Any] = None,
     ) -> Option:
+        """
+        Add an optional parameter to the configuration schema.
+        
+        Parameters
+        ----------
+        name : str
+            The name of the option.
+        type : callable
+            Type conversion function for the option.
+        default : Any, optional
+            Default value if the option is not found in configuration.
+            
+        Returns
+        -------
+        Option
+            The created Option object.
+        """
         option = Option(name=name, type=type, default=default)
         self.options[name] = option
 
@@ -124,9 +156,30 @@ class ConfigurationBuilder(Generic[T]):
 
 class ConfigurationFactory(Generic[T]):
     """
+    Factory for creating configured function instances.
+    
     This class maintains the schema context when defining parameters and
     options. Using the maintained definition we are able to call the wrapped
     function, provide overrides, or emit template configurations.
+    
+    Attributes
+    ----------
+    builder : ConfigurationBuilder
+        The configuration schema for the wrapped function.
+    section : str
+        Default configuration file section to use.
+    configuration_order : ResolutionDefinition
+        Defines the precedence order for configuration sources.
+        
+    Examples
+    --------
+    >>> # Created by @configurable decorator
+    >>> @configurable("Settings")
+    ... @param("value", type=int)
+    ... def process(value):
+    ...     return value * 2
+    >>> # process is now a ConfigurationFactory
+    >>> result = process("config.ini")
     """
 
     def __init__(
@@ -135,6 +188,18 @@ class ConfigurationFactory(Generic[T]):
         section: str,
         configuration_order: ResolutionDefinition,
     ):
+        """
+        Initialize a ConfigurationFactory.
+        
+        Parameters
+        ----------
+        config_builder : ConfigurationBuilder
+            The configuration schema.
+        section : str
+            Default configuration section name.
+        configuration_order : ResolutionDefinition
+            Resolution order for configuration sources.
+        """
         self.builder = config_builder
         self.section = section
         self.configuration_order = configuration_order
@@ -144,11 +209,46 @@ class ConfigurationFactory(Generic[T]):
         return repr(function)
 
     def _resolve_param(self, key: str, raw_values: dict) -> Any:
+        """
+        Resolve a parameter value with type conversion.
+        
+        Parameters
+        ----------
+        key : str
+            Parameter name.
+        raw_values : dict
+            Raw configuration values.
+            
+        Returns
+        -------
+        Any
+            Type-converted parameter value.
+            
+        Raises
+        ------
+        KeyError
+            If the required parameter is not found.
+        """
         _type = self.builder.parameters[key].type
         value = raw_values[key]
         return _type(value)
 
     def _resolve_option(self, key: str, raw_values: dict) -> Any:
+        """
+        Resolve an option value with type conversion or default.
+        
+        Parameters
+        ----------
+        key : str
+            Option name.
+        raw_values : dict
+            Raw configuration values.
+            
+        Returns
+        -------
+        Any
+            Type-converted option value or default if not found.
+        """
         _type = self.builder.options[key].type
         try:
             raw_value = raw_values[key]
@@ -184,17 +284,19 @@ class ConfigurationFactory(Generic[T]):
         **overrides: Any,
     ) -> T:
         """
+        Call the wrapped function with configuration.
+        
         Override __call__ protocol to allow transparent evocation of wrapped
         function.
 
         Parameters
         ----------
-        _filepath: Optional[Union[str, pathlib.Path]]
+        _filepath : Optional[Union[str, pathlib.Path]]
             The filepath to the configuration file to use.
-        _section: Optional[str]
+        _section : str, optional
             Override the configuration section to use. If left blank then
             the default provided during schema creation will be used.
-        **overrides: Any
+        **overrides : Any
             Keyword overrides which will be used. Any keys provided here will
             override any configuration.
             
@@ -202,6 +304,13 @@ class ConfigurationFactory(Generic[T]):
         -------
         T
             The return value of the wrapped function.
+            
+        Examples
+        --------
+        >>> # Call with config file
+        >>> result = configured_func("config.ini")
+        >>> # Override section and values
+        >>> result = configured_func("config.ini", _section="Dev", timeout=60)
         """
         if _filepath is not None:
             _filepath = pathlib.Path(_filepath)
@@ -216,26 +325,31 @@ class ConfigurationFactory(Generic[T]):
         **overrides: Any,
     ) -> Dict[str, Any]:
         """
+        Parse configuration from all sources.
+        
         Given the schema configuration, parse any provided overrides, and load
         configurations from the relevant configuration file, environment
         variables, or command line definitions.
 
         Parameters
         ----------
-        section: str
+        section : str
             The section to use against a provided configuration file.
-        _filepath: Optional[pathlib.Path]
+        _filepath : pathlib.Path, optional
             An optional configuration file to pull values from.
-        _ignore_options: bool
+        _ignore_options : bool, optional
             If true no defined options will be populated using configuration
             files, environment variables, or command line values. However
             keyword overrides will still affect any defined option.
-        **overrides: Any
+            Default is False.
+        **overrides : Any
             Override any keyword used by the wrapped function.
 
         Returns
         -------
         dict[str, Any]
+            Dictionary of resolved configuration values ready to pass to the
+            wrapped function.
         """
         context: Dict[str, Any] = {}
         if _filepath is not None:
@@ -265,6 +379,34 @@ class ConfigurationFactory(Generic[T]):
         _ignore_options: bool = True,
         **overrides: Any,
     ) -> pathlib.Path:
+        """
+        Generate a configuration file template.
+        
+        Parameters
+        ----------
+        output_path : pathlib.Path
+            Path where the configuration file will be written.
+        _section : str, optional
+            Configuration section name to use in the output file.
+        _filepath : pathlib.Path, optional
+            Existing configuration file to base values on.
+        _ignore_options : bool, optional
+            If True, only required parameters are included. Default is True.
+        **overrides : Any
+            Values to include in the generated configuration.
+            
+        Returns
+        -------
+        pathlib.Path
+            Path to the generated configuration file.
+            
+        Examples
+        --------
+        >>> # Generate template with defaults
+        >>> configured_func.emit("template.ini")
+        >>> # Generate with specific values
+        >>> configured_func.emit("template.ini", port=8080, debug=True)
+        """
         kwargs = self.parse(
             _section,
             _filepath=_filepath,
