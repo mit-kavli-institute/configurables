@@ -404,7 +404,8 @@ def parse_yaml(config_path: pathlib.Path, key: str) -> dict:
 
     if key not in data:
         established_keys = list(data.keys())
-        content = open(expanded, "rt").read()
+        with open(expanded, "rt") as file:
+            content = file.read()
         raise KeyError(
             f"Could not find section '{key}', "
             f"only found [{', '.join(established_keys)}]."
