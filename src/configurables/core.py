@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import functools
 import pathlib
-import typing
 from dataclasses import dataclass
 from functools import partial
 from typing import (
@@ -11,7 +9,6 @@ from typing import (
     Dict,
     Generic,
     Optional,
-    Type,
     TypeVar,
     Union,
     overload,
@@ -29,11 +26,11 @@ T = TypeVar("T")  # Return type of the wrapped function
 class Parameter:
     """
     Represents a required configuration parameter.
-    
+
     A parameter must be provided in the configuration source (file, environment
     variable, or command line) or as an override when calling the configured
     function.
-    
+
     Attributes
     ----------
     name : str
@@ -41,7 +38,7 @@ class Parameter:
     type : callable
         A callable that converts the string value from configuration to the
         desired type (e.g., int, float, pathlib.Path).
-        
+
     Examples
     --------
     >>> param = Parameter(name="port", type=int)
@@ -56,10 +53,10 @@ class Parameter:
 class Option:
     """
     Represents an optional configuration parameter with a default value.
-    
+
     An option can be provided in configuration sources but will fall back to
     its default value if not found.
-    
+
     Attributes
     ----------
     name : str
@@ -70,7 +67,7 @@ class Option:
     default : Any
         The default value to use if the option is not found in any
         configuration source.
-        
+
     Examples
     --------
     >>> option = Option(name="timeout", type=int, default=30)
@@ -87,10 +84,10 @@ class Option:
 class ConfigurationBuilder(Generic[T]):
     """
     Builds configuration schema for a function.
-    
+
     This class accumulates parameter and option definitions as decorators are
     applied to a function, building up a complete configuration schema.
-    
+
     Attributes
     ----------
     parameters : dict
@@ -107,14 +104,14 @@ class ConfigurationBuilder(Generic[T]):
     def add_parameter(self, name: str, type: Callable) -> Parameter:
         """
         Add a required parameter to the configuration schema.
-        
+
         Parameters
         ----------
         name : str
             The name of the parameter.
         type : callable
             Type conversion function for the parameter.
-            
+
         Returns
         -------
         Parameter
@@ -133,7 +130,7 @@ class ConfigurationBuilder(Generic[T]):
     ) -> Option:
         """
         Add an optional parameter to the configuration schema.
-        
+
         Parameters
         ----------
         name : str
@@ -142,7 +139,7 @@ class ConfigurationBuilder(Generic[T]):
             Type conversion function for the option.
         default : Any, optional
             Default value if the option is not found in configuration.
-            
+
         Returns
         -------
         Option
@@ -157,11 +154,11 @@ class ConfigurationBuilder(Generic[T]):
 class ConfigurationFactory(Generic[T]):
     """
     Factory for creating configured function instances.
-    
+
     This class maintains the schema context when defining parameters and
     options. Using the maintained definition we are able to call the wrapped
     function, provide overrides, or emit template configurations.
-    
+
     Attributes
     ----------
     builder : ConfigurationBuilder
@@ -170,7 +167,7 @@ class ConfigurationFactory(Generic[T]):
         Default configuration file section to use.
     configuration_order : ResolutionDefinition
         Defines the precedence order for configuration sources.
-        
+
     Examples
     --------
     >>> # Created by @configurable decorator
@@ -190,7 +187,7 @@ class ConfigurationFactory(Generic[T]):
     ):
         """
         Initialize a ConfigurationFactory.
-        
+
         Parameters
         ----------
         config_builder : ConfigurationBuilder
@@ -211,19 +208,19 @@ class ConfigurationFactory(Generic[T]):
     def _resolve_param(self, key: str, raw_values: dict) -> Any:
         """
         Resolve a parameter value with type conversion.
-        
+
         Parameters
         ----------
         key : str
             Parameter name.
         raw_values : dict
             Raw configuration values.
-            
+
         Returns
         -------
         Any
             Type-converted parameter value.
-            
+
         Raises
         ------
         KeyError
@@ -236,14 +233,14 @@ class ConfigurationFactory(Generic[T]):
     def _resolve_option(self, key: str, raw_values: dict) -> Any:
         """
         Resolve an option value with type conversion or default.
-        
+
         Parameters
         ----------
         key : str
             Option name.
         raw_values : dict
             Raw configuration values.
-            
+
         Returns
         -------
         Any
@@ -285,7 +282,7 @@ class ConfigurationFactory(Generic[T]):
     ) -> T:
         """
         Call the wrapped function with configuration.
-        
+
         Override __call__ protocol to allow transparent evocation of wrapped
         function.
 
@@ -299,12 +296,12 @@ class ConfigurationFactory(Generic[T]):
         **overrides : Any
             Keyword overrides which will be used. Any keys provided here will
             override any configuration.
-            
+
         Returns
         -------
         T
             The return value of the wrapped function.
-            
+
         Examples
         --------
         >>> # Call with config file
@@ -326,7 +323,7 @@ class ConfigurationFactory(Generic[T]):
     ) -> Dict[str, Any]:
         """
         Parse configuration from all sources.
-        
+
         Given the schema configuration, parse any provided overrides, and load
         configurations from the relevant configuration file, environment
         variables, or command line definitions.
@@ -381,7 +378,7 @@ class ConfigurationFactory(Generic[T]):
     ) -> pathlib.Path:
         """
         Generate a configuration file template.
-        
+
         Parameters
         ----------
         output_path : pathlib.Path
@@ -394,12 +391,12 @@ class ConfigurationFactory(Generic[T]):
             If True, only required parameters are included. Default is True.
         **overrides : Any
             Values to include in the generated configuration.
-            
+
         Returns
         -------
         pathlib.Path
             Path to the generated configuration file.
-            
+
         Examples
         --------
         >>> # Generate template with defaults
@@ -424,7 +421,7 @@ class ConfigurationFactory(Generic[T]):
     ) -> Callable[..., T]:
         """
         Generate a partial function using the passed configurations.
-        
+
         Parameters
         ----------
         _filepath : pathlib.Path, optional
@@ -433,12 +430,12 @@ class ConfigurationFactory(Generic[T]):
             Configuration section to use.
         **overrides : Any
             Additional configuration overrides.
-            
+
         Returns
         -------
         Callable[..., T]
             Partial function with configuration values pre-applied.
-            
+
         Examples
         --------
         >>> # Create partial with config
@@ -454,15 +451,15 @@ class ConfigurationFactory(Generic[T]):
 def create_typed_wrapper(factory: ConfigurationFactory[T]) -> ConfigurationFactory[T]:
     """
     Create a typed wrapper for a ConfigurationFactory that preserves type information.
-    
+
     This function enhances the factory with better type hints for IDE support,
     showing that configuration file inputs are valid alternatives to direct parameters.
-    
+
     Parameters
     ----------
     factory : ConfigurationFactory[T]
         The configuration factory to wrap.
-        
+
     Returns
     -------
     ConfigurationFactory[T]
