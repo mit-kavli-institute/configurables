@@ -77,7 +77,7 @@ try:
 except ImportError:
     try:
         # For older Python versions, try tomli
-        import tomli as tomllib  # type: ignore[import-not-found,no-redef]
+        import tomli as tomllib  # type: ignore[import-not-found]
 
         HAS_TOML = True
     except ImportError:
