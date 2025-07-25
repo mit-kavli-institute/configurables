@@ -31,7 +31,7 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage" = "https://tessgit.mit.edu/wcfong/configurables"
+"Homepage" = "https://github.com/mit-kavli-institute/configurables"
 
 [project.optional-dependencies]
 dev = [
